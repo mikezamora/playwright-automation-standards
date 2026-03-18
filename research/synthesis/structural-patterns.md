@@ -2,9 +2,9 @@
 
 ## Overview
 
-This document consolidates structural patterns observed across 10 Gold-standard Playwright suites, 12 Silver suites, and 2 additional suites (Slate, playwright-ts template) during the landscape phase (rounds 1-11), refined with deep-dive analysis from the structure phase (rounds 13-20).
+This document consolidates structural patterns observed across 10 Gold-standard Playwright suites, 5 Silver suites, 7+ Bronze/community suites, and 25+ documentation sources during the landscape phase (rounds 1-11), refined with deep-dive analysis from the structure phase (rounds 13-20), and validated with a 12-suite sweep in round 21.
 
-**Status:** Updated with rounds 17-20 findings — detailed config, fixture, and POM pattern catalogs added
+**Status:** FINAL — Updated with rounds 21-22 findings. All open questions resolved. Definitive structure standards published.
 
 ---
 
@@ -354,11 +354,44 @@ Each level is valid — maturity should match project needs, not be pursued for 
 5. **Retry counts encode infrastructure confidence** — Higher retries = more infrastructure variability
 6. **Serial execution is a valid strategy** — freeCodeCamp proves 126 tests work with 1 worker
 7. **Not all apps need Playwright** — Supabase and Excalidraw show Vitest fills the gap for component-heavy apps
-8. **NEW: `process.env.CI` ternary is the universal environment switch** — No suite uses .env files or dotenv for CI/local branching
-9. **NEW: POM inheritance is a community anti-pattern** — Zero Gold suites use `extends BasePage`; composition via fixtures is preferred
-10. **NEW: Fixture composition via `mergeTests()` enables modular architecture** — Domain-segmented fixture files merged at test level
-11. **NEW: Three-slot reporter pattern** — Progress + Artifact + Integration slots reflect CI maturity
-12. **NEW: Transactional cleanup solves parallel data conflicts** — Cal.com's `$transaction()` with dependency-ordered deletes
+8. **`process.env.CI` ternary is the universal environment switch** — No suite uses .env files or dotenv for CI/local branching
+9. **POM inheritance is a community anti-pattern** — Zero production suites (0/22) use `extends BasePage`; composition via fixtures is preferred
+10. **Fixture composition via `mergeTests()` enables modular architecture** — Domain-segmented fixture files merged at test level
+11. **Three-slot reporter pattern** — Progress + Artifact + Integration slots reflect CI maturity
+12. **Transactional cleanup solves parallel data conflicts** — Cal.com's `$transaction()` with dependency-ordered deletes
+13. **ROUND 21: `.spec.ts` naming is near-universal** — Confirmed across 15+ suites including Silver/Bronze tiers, not just Gold
+14. **ROUND 21: Feature-based grouping outperforms type-based grouping** — 5/5 Gold suites with 20+ tests use feature directories; type-based (e2e/ui/api/) found only in Bronze templates
+15. **ROUND 21: Auto fixture auth is an emerging alternative** — PostHog migrated from setup projects to auto fixtures for better --ui mode compatibility
+16. **ROUND 21: Domain-specific matcher packages are reproducible** — playwright-posthog independently implements the Grafana plugin-e2e pattern of publishing custom matchers
+
+---
+
+## Validation Sweep Results (Round 21)
+
+### Patterns Confirmed as Universal
+| Pattern | Gold Suites | Silver Suites | Bronze/Community | Verdict |
+|---------|------------|---------------|-----------------|---------|
+| TypeScript config | 10/10 | 5/5 | Most | **Universal** |
+| `process.env.CI` ternary | 10/10 | 4/5 | Minority | **Universal in production** |
+| Dedicated test directory | 10/10 | 5/5 | All | **Universal** |
+| `.spec.ts` naming | 7/10 | 5/5 | Most | **Near-universal** |
+| Multi-project config | 10/10 | 5/5 | Most | **Universal** |
+
+### Patterns Confirmed as Gold-Only (Production Best Practice)
+| Pattern | Gold | Silver/Bronze | Verdict |
+|---------|------|---------------|---------|
+| Feature-based grouping | 5/5 (20+ tests) | Rare | **Gold standard, not universal** |
+| `test.extend<T>()` fixtures | 8/10 | 2/5 | **Maturity indicator** |
+| Factory fixtures | 3/10 | 0/5 | **Advanced pattern** |
+| Custom matchers as npm packages | 1/10 | 1/12 | **Highest maturity** |
+
+### Patterns Confirmed as Anti-Patterns
+| Pattern | Gold | Silver | Bronze | Verdict |
+|---------|------|--------|--------|---------|
+| POM inheritance (`extends BasePage`) | 0/10 | 0/5 | 2/7 | **Anti-pattern** |
+| Type-based directories (e2e/ui/api/) | 0/10 | 0/5 | 3/7 | **Anti-pattern** |
+| JavaScript config | 0/10 | 0/5 | 1/7 | **Anti-pattern** |
+| Multi-env config files | 0/10 | 0/5 | 1/7 | **Anti-pattern** |
 
 ---
 
@@ -376,8 +409,13 @@ Each level is valid — maturity should match project needs, not be pursued for 
 7. **How do suites handle test data cleanup across parallel workers?** — Cal.com uses `prisma.$transaction()` with dependency-ordered deletes + `retryOnNetworkError()`. Worker isolation via `workerInfo.workerIndex` + timestamp suffix.
 8. **What is the optimal project structure for teams of different sizes?** — Small teams: inline project definitions (2-5 projects). Medium teams: auth helper function like `withAuth()` (5-15 projects). Large teams: domain-segmented projects with setup/teardown chains (15-31 projects).
 
-## Open Questions (for Rounds 21-22)
+### From Rounds 17-20 (Answered in Rounds 21-22)
+9. **How should the timeout hierarchy be configured for different application types?** — Application type determines expect timeout: standard web apps (5s), editor/dashboard-heavy apps (8-10s), infrastructure-heavy apps (10s). Test timeout should be 2-4x expect timeout. Action timeout of 0 (unlimited) is valid for editor-heavy UIs.
+10. **What are the performance implications of different worker allocation strategies?** — CPU percentage (AFFiNE `'50%'`) is most portable across machines. Fixed CI workers (Grafana `4`) are most deterministic for reproducible CI. CPU formula (Immich `Math.round(os.cpus().length * 0.75)`) balances both. Serial execution (freeCodeCamp `1`) eliminates parallelism concerns at the cost of speed.
+11. **How should cross-browser testing be structured given the CI cost tradeoff?** — Run Chromium-only for development (fast feedback). Run full matrix (Chromium + Firefox + WebKit) in CI. Firefox runs ~34% slower than Chromium requiring proportional CI allocation. Use conditional platform projects for platform-specific browsers (Slate: WebKit on macOS only).
 
-1. How should the timeout hierarchy be configured for different application types?
-2. What are the performance implications of different worker allocation strategies?
-3. How should cross-browser testing be structured given the CI cost tradeoff?
+## Open Questions
+
+All structural questions have been resolved. No open questions remain for the structure phase.
+
+Structure standards are now **DEFINITIVE** — see `standards/structure-standards.md`.
