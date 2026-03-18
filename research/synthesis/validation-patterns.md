@@ -2,9 +2,9 @@
 
 ## Overview
 
-This document consolidates validation patterns observed across Gold-standard Playwright suites during the landscape phase (rounds 1-11) and refined during the validation deep-dive phase (rounds 23-26). Validation patterns include assertion styles, retry strategies, wait patterns, flakiness management, and test stability approaches.
+This document consolidates validation patterns observed across Gold-standard Playwright suites during the landscape phase (rounds 1-11) and refined during the validation deep-dive phase (rounds 23-30). Validation patterns include assertion styles, retry strategies, wait patterns, flakiness management, CI/CD integration, and test isolation approaches.
 
-**Status:** Refined — rounds 23-26 deep dives complete (assertion strategies + retry/flakiness management)
+**Status:** Refined — rounds 23-30 deep dives complete (assertion strategies + retry/flakiness management + CI/CD integration + test isolation)
 
 ---
 
@@ -287,10 +287,25 @@ export default defineConfig({
 - Frequency: 3/10 Gold suites implement per-project control
 - Evidence: [immich-e2e] (web: 1 worker serial; ui: 3 workers parallel; maintenance: 1 worker serial)
 
-**Pattern: workers=1 in CI with sharding for scale**
-- Official recommendation for stability
+**Pattern: workers=1 in CI with sharding for scale** *(EXPANDED — Round 28)*
+- Official recommendation for stability: `workers: process.env.CI ? 1 : undefined`
 - Scale horizontally via `--shard=X/Y` rather than increasing workers
-- Evidence: [playwright-ci-docs], [currents-github-actions]
+- Shard count by suite size: <50 tests (0), 50-200 (2-4), 200+ (4-8)
+- `fail-fast: false` in GitHub Actions matrix ensures all shards complete
+- Evidence: [playwright-ci-docs], [currents-github-actions], [calcom-e2e] 4 shards, [affine-e2e] 6 shards
+
+**Pattern: Four granularity levels of parallelism control** *(NEW — Round 28)*
+- Workers (process-level) > Projects (suite-level) > Files (file-level) > Describes (block-level)
+- `fullyParallel: true` enables cross-file parallel execution within a worker
+- `test.describe.configure({ mode: 'parallel' | 'serial' })` for block-level control
+- `workerInfo.workerIndex` for resource partitioning; `workerInfo.parallelIndex` for recycled resource pools
+- Evidence: [playwright-parallelism-docs], [ray.run-parallelism]
+
+**Pattern: Worker isolation guarantees test independence** *(NEW — Round 28)*
+- Each worker = separate Node.js process with its own browser instance
+- Workers share no state (globals, browser context, cookies)
+- Worker restarts on test failure with retries enabled (clean state for retry)
+- Evidence: [playwright-parallelism-docs]
 
 ### 10. Artifact Strategy
 
@@ -305,6 +320,152 @@ export default defineConfig({
 - Missing this means "crucial traces disappear after platform retention windows close"
 - Evidence: [devto-ci-integrations]
 
+**Pattern: Tiered artifact retention** *(NEW — Round 27)*
+- Main branch: 30-day retention for historical regression baselines
+- PR branches: 7-day retention (review cycle only)
+- Shard-specific artifact naming for merge: `playwright-report-${{ matrix.shard }}`
+- Content: HTML reports + `test-results/` (traces, screenshots, diff images)
+- Evidence: [affine-e2e], [calcom-e2e], [playwright-ci-docs]
+
+### 11. CI/CD Integration Patterns *(NEW — Rounds 27-28)*
+
+**Pattern: Universal three-step GitHub Actions workflow**
+- Step 1: `npm ci` + `npx playwright install --with-deps chromium`
+- Step 2: `npx playwright test`
+- Step 3: `actions/upload-artifact@v4` with `if: always()`
+- `--with-deps` installs OS-level dependencies; selective browser install saves ~400MB
+- Evidence: All 10 Gold suites; [playwright-ci-docs]
+
+**Pattern: Sharded CI with blob reporter + merge-reports**
+- `reporter: [['blob'], ['github']]` in CI config for mergeable report fragments
+- Post-job: `npx playwright merge-reports --reporter=html ./all-blob-reports`
+- Required for any suite using `--shard=N/M`
+- Evidence: [calcom-e2e], [affine-e2e], [playwright-ci-docs]
+
+**Pattern: Docker execution requires `--init` and `--ipc=host`**
+- `mcr.microsoft.com/playwright:v1.50.0-noble` official image with pre-installed browsers
+- `--init` prevents zombie browser processes; `--ipc=host` (or `--shm-size=1gb`) prevents Chromium SIGBUS crashes
+- Pin image version to match `@playwright/test` npm version
+- 4/10 Gold suites use Docker image; 6/10 use `npx playwright install --with-deps`
+- Evidence: [playwright-docker-docs], [immich-e2e], [affine-e2e]
+
+**Pattern: `process.env.CI` as universal configuration switch**
+- Gates: workers, retries, timeouts, reporters, artifacts, `forbidOnly`
+- Set automatically by GitHub Actions, GitLab CI, CircleCI, and all major CI platforms
+- `forbidOnly: !!process.env.CI` prevents `.only()` commits from skipping tests
+- Evidence: All 10 Gold suites; [playwright-ci-docs]
+
+**Pattern: CI reporter stack — github + blob + junit**
+- `github` reporter: inline failure annotations on PR diffs (8/10 Gold suites)
+- `blob` reporter: mergeable fragments for sharded runs
+- `junit` reporter: machine-readable XML for dashboard integrations (Allure, Currents)
+- `html` reporter: human-readable artifact for download
+- Evidence: [grafana-e2e], [calcom-e2e], [devto-ci-integrations]
+
+**Pattern: Browser caching saves 30-60s per CI job**
+- Cache `~/.cache/ms-playwright` keyed on `hashFiles('package-lock.json')`
+- Conditional install: `if: steps.playwright-cache.outputs.cache-hit != 'true'`
+- Alternative: Docker image eliminates caching complexity entirely
+- Evidence: [currents-github-actions], [grafana-e2e]
+
+**Pattern: Two-tier PR gate — smoke + full suite**
+- Tier 1 (every PR): `--grep @smoke`, single shard, <5 minutes, required check
+- Tier 2 (merge to main): full suite with sharding, all browsers, <15 minutes
+- AFFiNE: explicit two-tier; Cal.com: single-tier fast via shards; Grafana: implicit via `paths` filter
+- Evidence: [affine-e2e], [calcom-e2e], [grafana-e2e]
+
+**Pattern: Cost optimization techniques — six proven strategies**
+1. `paths` filter: skip e2e when only non-test files change
+2. Browser caching: 30-60s savings per job
+3. Selective browser install: Chromium-only unless cross-browser required
+4. `maxFailures`: early abort on cascading failures
+5. Shard balancing: distribute by historical duration (advanced)
+6. Docker image: eliminate browser install entirely
+- Evidence: [grafana-e2e], [calcom-e2e], [currents-github-actions]
+
+**Pattern: Chromium-primary cross-browser strategy**
+- 6/10 Gold suites: Chromium-only in CI
+- 3/10: Full browser matrix via CI (Grafana, Slate, Excalidraw)
+- Compromise: Chromium in CI, cross-browser on nightly schedule
+- Evidence: [playwright-ci-docs], [grafana-e2e], [calcom-e2e], [slate-e2e]
+
+### 12. Test Isolation and Environment Management *(NEW — Rounds 29-30)*
+
+**Pattern: Three-layer test isolation model**
+- Layer 1 — Browser context (automatic): fresh cookies, localStorage, sessionStorage per test
+- Layer 2 — Application state (manual): fixture-based API cleanup with automatic teardown
+- Layer 3 — Infrastructure (CI): fresh Docker containers, database migration + seed
+- Evidence: [playwright-fixtures-docs], [grafana-e2e], [calcom-e2e], [immich-e2e]
+
+**Pattern: `storageState` with setup projects for auth isolation**
+- Setup project authenticates once, saves to `.auth/user.json`
+- Test projects declare `dependencies: ['setup']` and `use: { storageState }`
+- Multi-role: separate `.auth/*.json` files per role (user, admin)
+- `.auth/` directory must be in `.gitignore`
+- 7/10 Gold suites use this pattern; API-based auth faster when available
+- Evidence: [playwright-auth-docs], [calcom-e2e], [grafana-e2e], [immich-e2e]
+
+**Pattern: Database seeding — migration + seed as consensus**
+- Strategy 1 (4/10): Migration + seed script before tests (Cal.com, freeCodeCamp)
+- Strategy 2 (2/10): Docker Compose with pre-seeded database (Immich)
+- Strategy 3 (3/10): API-based data creation per test (Grafana)
+- Consensus: migration + seed for baseline, API-based for test-specific data
+- Evidence: [calcom-e2e], [immich-e2e], [grafana-e2e], [freecodecamp-e2e]
+
+**Pattern: Layered environment variable management**
+- Layer 1: Defaults in `playwright.config.ts` (`process.env.X || 'default'`)
+- Layer 2: `.env.test` (committed, non-sensitive) and `.env.local` (gitignored)
+- Layer 3: CI secrets via `${{ secrets.X }}` for sensitive values
+- Sensitive values never appear in committed files
+- Evidence: [calcom-e2e], [grafana-e2e], [freecodecamp-e2e]
+
+**Pattern: `baseURL` from environment variable with sensible defaults**
+- `baseURL: process.env.BASE_URL || 'http://localhost:3000'`
+- Tests use relative URLs (`page.goto('/')`) — `baseURL` handles the rest
+- Enables: local, staging, preview, and production execution from same tests
+- Evidence: [calcom-e2e], [grafana-e2e], [playwright-ci-docs]
+
+**Pattern: `webServer` with `reuseExistingServer: !process.env.CI` consensus**
+- Locally: reuses running server (developer convenience, preserves hot-reload)
+- In CI: starts fresh server (deterministic, clean state)
+- Conditionally omitted when `BASE_URL` is set (external server already running)
+- 5/10 Gold suites use `webServer`; 5/10 manage servers externally (Docker Compose)
+- Evidence: [playwright-webserver-docs], [calcom-e2e], [freecodecamp-e2e], [excalidraw-e2e]
+
+**Pattern: Project dependencies replace `globalSetup` for auth** *(NEW — Round 30)*
+- `globalSetup` lacks: fixture access, trace files, report visibility, per-worker isolation
+- Project dependencies provide all of these and are the modern standard
+- `globalSetup` reserved for infrastructure-only tasks (Docker, database migration)
+- 6/10 Gold suites migrated to project dependencies; 3/10 still use `globalSetup` for infra
+- Evidence: [playwright-auth-docs], [playwright-global-setup-docs], [calcom-e2e]
+
+**Pattern: Preview deployment testing via `deployment_status` event**
+- Vercel/Netlify trigger `deployment_status` event when preview is ready
+- Preview URL injected as `BASE_URL` environment variable
+- Focus on critical paths (not full suite) — preview data may differ from staging
+- Evidence: [calcom-e2e], [vercel-docs]
+
+**Pattern: Three-tier multi-environment execution strategy**
+- Tier 1 — Local: full suite, `webServer`, seeded database, multi-worker
+- Tier 2 — Staging/Preview: full suite, external server, `workers: 1`
+- Tier 3 — Production: `@smoke` tests only, read-only, no retries
+- Config: conditionally disable `webServer` when `BASE_URL` is set
+- Evidence: [calcom-e2e], [grafana-e2e], [currents-multi-env]
+
+**Pattern: Test data isolation across parallel workers**
+- Unique data per test via timestamps/UUIDs in API creation
+- Worker-indexed resources via `workerInfo.workerIndex` for expensive shared state
+- Namespace isolation: unique identifiers prevent cross-worker data collision
+- Fixture-based cleanup ensures teardown even on test failure
+- Evidence: [playwright-parallelism-docs], [grafana-e2e], [calcom-e2e], [immich-e2e]
+
+**Pattern: Dedicated test accounts with least privilege for auth in CI**
+- Test accounts stored as CI secrets; separate from production accounts
+- Minimal permissions (principle of least privilege)
+- Self-hosted backends use seeded test users (no CI secrets needed)
+- `.auth/` directory gitignored; Playwright masks env vars in traces
+- Evidence: [calcom-e2e], [grafana-e2e], [immich-e2e]
+
 ---
 
 ## Emerging Themes
@@ -314,11 +475,17 @@ export default defineConfig({
 3. **Traces replace video** — 9/10 Gold suites prefer traces over video for debugging
 4. **Flakiness management is disciplined** — Three-tier quarantine (skip/fixme/fail) always paired with issue tracking
 5. **Parallelism is nuanced** — Per-project control outperforms global parallel/serial toggle
-6. **Five retry mechanisms form a hierarchy** — Implicit (auto-wait, assertion retry) before explicit (toPass, poll, test retry) *(NEW)*
-7. **ESLint enforcement prevents five flakiness categories** — Hard waits, stale selectors, deprecated waits, forced actions, silent passes *(NEW)*
-8. **Network interception is the primary determinism tool** — `page.route()` with external JSON fixtures *(NEW)*
-9. **Clock API enables deterministic time testing** — `setFixedTime` for dates, `install`+`fastForward` for time progression *(NEW)*
-10. **Timeout hierarchy has four layers** — Test > expect > action > navigation, each with distinct defaults and tuning *(NEW)*
+6. **Five retry mechanisms form a hierarchy** — Implicit (auto-wait, assertion retry) before explicit (toPass, poll, test retry)
+7. **ESLint enforcement prevents five flakiness categories** — Hard waits, stale selectors, deprecated waits, forced actions, silent passes
+8. **Network interception is the primary determinism tool** — `page.route()` with external JSON fixtures
+9. **Clock API enables deterministic time testing** — `setFixedTime` for dates, `install`+`fastForward` for time progression
+10. **Timeout hierarchy has four layers** — Test > expect > action > navigation, each with distinct defaults and tuning
+11. **`workers=1 + sharding` is the CI parallelism consensus** — Horizontal scaling via matrix strategy, not vertical via workers *(NEW — Round 27-28)*
+12. **`process.env.CI` gates all CI-vs-local differences** — Workers, retries, timeouts, reporters, artifacts, `forbidOnly` *(NEW — Round 27)*
+13. **Three-layer test isolation** — Browser context (automatic) + application state (fixture cleanup) + infrastructure (Docker/seeds) *(NEW — Round 29)*
+14. **`storageState` with setup projects** is the universal auth pattern — replaces `globalSetup` for auth *(NEW — Round 29)*
+15. **`reuseExistingServer: !process.env.CI`** is a universal consensus with zero exceptions in Gold suites *(NEW — Round 30)*
+16. **Multi-environment execution via `baseURL`** — Same tests target local, staging, preview, production via environment variable *(NEW — Round 30)*
 
 ---
 
@@ -329,11 +496,15 @@ export default defineConfig({
 3. **`toPass()` retry intervals in practice:** Default `[100, 250, 500, 1000]`; Gold suites use `[1000, 2000, 5000]` for slow backends *(Resolved — Round 25)*
 4. **Flaky test rate tracking:** Built-in passed/flaky/failed categorization + `--fail-on-flaky-tests`; custom reporters for trend dashboards are the next maturity frontier *(Resolved — Round 26)*
 5. **Custom reporter integrations:** JSON reporter with database aggregation; Gold suites rely on CI platform dashboards rather than custom reporters *(Resolved — Round 26)*
+6. **CI parallelism and sharding strategies:** `workers=1` per shard + `--shard=N/M` matrix; shard count scales with suite size (2-8 shards); `fail-fast: false` ensures all shards complete *(Resolved — Round 27-28)*
+7. **GitHub Actions workflow patterns:** Universal three-step (install > browsers > test) + `if: always()` artifact upload; blob reporter for sharded runs; github reporter for PR annotations *(Resolved — Round 27)*
+8. **Cross-browser testing in CI:** Chromium-primary (6/10 Gold suites); full matrix only when product requires; nightly cross-browser as compromise *(Resolved — Round 28)*
+9. **Artifact retention and cleanup:** Tiered: main branch 30d, PR 7d; shard-specific naming; traces + screenshots on failure only *(Resolved — Round 27)*
+10. **Test data isolation across parallel workers:** Unique data via timestamps/UUIDs; `workerIndex` for resource partitioning; fixture-based cleanup ensures teardown *(Resolved — Round 29-30)*
 
-## Open Questions (for Remaining Validation Rounds 27-32)
+## Open Questions (for Remaining Validation Rounds 31-32)
 
-1. How do Gold suites configure CI parallelism and sharding strategies?
-2. What GitHub Actions workflow patterns are used for Playwright CI?
-3. How do suites handle cross-browser testing matrix in CI?
-4. What artifact retention and cleanup strategies exist?
-5. How do suites manage test data across parallel workers?
+1. What accessibility testing patterns integrate with Playwright validation?
+2. How do Gold suites implement visual regression testing at scale?
+3. What are the recommended Playwright configuration templates for new projects?
+4. How do suites handle test maintenance and refactoring at scale?
