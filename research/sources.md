@@ -28,5 +28,5 @@
 | vercel-preview-e2e | mxschmitt/vercel-playwright-end-to-end-tests | ~200 | https://github.com/mxschmitt/vercel-playwright-end-to-end-tests | TypeScript, Next.js | 2024 | Vercel preview deployment testing |
 | turbo-monorepo-template | Markkos89/turbo-monorepo-template | ~200 | https://github.com/Markkos89/turbo-monorepo-template | TypeScript, Next.js, Turborepo | 2024 | Full-stack Turborepo + Playwright template |
 | blocksuite-e2e | toeverything/blocksuite | ~5,700 | https://github.com/toeverything/blocksuite | TypeScript | 2026-03 | Editor framework; user journey E2E tests |
-| supabase-community-e2e | supabase-community/e2e | ~30 | https://github.com/supabase-community/e2e | TypeScript | 2025 | Community E2E tests for Supabase; setup projects |
+| supabase-community-e2e | supabase-community/e2e | ~30 | https://github.com/supabase-community/e2e | TypeScript | 2025 | Community E2E tests for Supabase; setup projects (discovered round 1 via supabase ecosystem) |
 | playwright-api-testing | playwright.dev (docs) | N/A | https://playwright.dev/docs/api-testing | TypeScript | 2026-03 | Official API testing documentation |
