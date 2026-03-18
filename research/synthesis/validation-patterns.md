@@ -4,7 +4,7 @@
 
 This document consolidates validation patterns observed across Gold-standard Playwright suites during the landscape phase (rounds 1-11) and refined during the validation deep-dive phase (rounds 23-30). Validation patterns include assertion styles, retry strategies, wait patterns, flakiness management, CI/CD integration, and test isolation approaches.
 
-**Status:** Refined — rounds 23-30 deep dives complete (assertion strategies + retry/flakiness management + CI/CD integration + test isolation)
+**Status:** FINAL — rounds 23-32 complete. All patterns validated across 21 suites (10 Gold + 11 Silver). Zero contradictions. DEFINITIVE standards written in `standards/validation-standards.md` and `standards/cicd-standards.md`.
 
 ---
 
@@ -502,9 +502,28 @@ export default defineConfig({
 9. **Artifact retention and cleanup:** Tiered: main branch 30d, PR 7d; shard-specific naming; traces + screenshots on failure only *(Resolved — Round 27)*
 10. **Test data isolation across parallel workers:** Unique data via timestamps/UUIDs; `workerIndex` for resource partitioning; fixture-based cleanup ensures teardown *(Resolved — Round 29-30)*
 
-## Open Questions (for Remaining Validation Rounds 31-32)
+## Open Questions (Resolved or Deferred)
 
-1. What accessibility testing patterns integrate with Playwright validation?
-2. How do Gold suites implement visual regression testing at scale?
-3. What are the recommended Playwright configuration templates for new projects?
-4. How do suites handle test maintenance and refactoring at scale?
+1. ~~What accessibility testing patterns integrate with Playwright validation?~~ **Partially resolved:** `toMatchAriaSnapshot()` and `toHaveNoA11yViolations` documented. Full treatment deferred to security/accessibility phase (rounds 37-40). *(Round 31)*
+2. ~~How do Gold suites implement visual regression testing at scale?~~ **Resolved:** `toHaveScreenshot()` with `maxDiffPixels`, `animations: 'disabled'`, environment-controlled baselines. Documented in V1.5 and V5 standards. *(Round 31)*
+3. ~~What are the recommended Playwright configuration templates for new projects?~~ **Deferred:** To Task 17 (templates and checklist). *(Round 32)*
+4. ~~How do suites handle test maintenance and refactoring at scale?~~ **Partially resolved:** Through POM, fixture, and isolation standards. Full treatment in cross-validation phase. *(Round 32)*
+
+## Round 31 Validation Sweep Summary
+
+Round 31 scanned 11 Silver-standard suites (Supabase, Appwrite, Directus, Outline, Strapi, NocoDB, Hoppscotch, Logto, n8n, Twenty, Wiki.js) plus 3 recently published best-practices guides. Key findings:
+
+- **Web-first assertions:** 21/21 suites (100%) — truly universal
+- **Retry-infrastructure correlation confirmed:** 1 retry (simple) through 3+ (complex Docker)
+- **`reuseExistingServer: !process.env.CI`:** 9/9 suites using `webServer` — strongest consensus pattern
+- **Guard assertions:** 18/21 suites (86%) — should be a standard recommendation
+- **`forbidOnly`:** 11/21 (52%) — promoted to MUST based on risk (silent test skipping)
+- **`maxFailures`:** 3/21 (14%) — recommended but not universal enough for MUST
+- **No contradictions found** across any domain
+
+## Standards Written (Round 32)
+
+DEFINITIVE versions of:
+- `standards/validation-standards.md` — 24 standards across 6 domains (V1-V6)
+- `standards/cicd-standards.md` — 24 standards across 7 domains (C1-C7)
+- `standards/quality-criteria.md` — Q5 validation quality rubric with 5 maturity levels and 6-domain scoring

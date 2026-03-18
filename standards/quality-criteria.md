@@ -1,7 +1,8 @@
 # Quality Criteria
 
-> **PRELIMINARY — to be validated in phases 2-7 (rounds 13-55)**
-> This document defines quality criteria for evaluating Playwright test suites, based on landscape observations from rounds 1-12.
+> **UPDATED — validation quality rubric added from rounds 31-32**
+> This document defines quality criteria for evaluating Playwright test suites, based on landscape observations from rounds 1-12
+> and refined with the validation quality rubric from rounds 23-32.
 > The tier system has been validated across 10 Gold, 12 Silver, and 33 Bronze suites.
 
 ---
@@ -142,8 +143,97 @@
 
 ---
 
+## Q5. Validation Quality Rubric
+
+> Added from validation rounds 23-32. Defines five maturity levels for test validation practices.
+
+### Q5.1 Five-level validation maturity model
+
+| Level | Name | Description | Key Indicators |
+|-------|------|-------------|---------------|
+| **1** | **Basic** | Uses Playwright with default settings | Web-first assertions present; default timeouts and retries; basic CI integration |
+| **2** | **Structured** | Environment-aware configuration | `process.env.CI` gates retries/workers/timeouts; conditional artifacts; `forbidOnly` set; multi-project config |
+| **3** | **Disciplined** | Active flakiness prevention | Guard assertions between actions; ESLint enforcement; quarantine with tracking; `toPass()` for complex waits; event-based waits with `Promise.all` |
+| **4** | **Optimized** | Advanced patterns for scale and reliability | Custom matchers; sharding with blob reporter; `maxFailures`; network interception for determinism; three-layer test isolation; `storageState` auth with setup projects |
+| **5** | **Exemplary** | Industry-leading practices | Dynamic shard calculation; `--fail-on-flaky-tests` CI gate; clock API for time-dependent tests; accessibility assertions (`toMatchAriaSnapshot`); custom reporters for trend dashboards; published reusable packages |
+
+### Q5.2 Maturity level mapping to suite tiers
+
+| Maturity Level | Typical Tier | Suite Examples |
+|---------------|-------------|----------------|
+| Level 1 | Bronze | Template suites, getting-started examples |
+| Level 2 | Silver (lower) | Hoppscotch, Appwrite |
+| Level 3 | Silver (upper) | Directus, Outline, Strapi, n8n |
+| Level 4 | Gold | Cal.com, Immich, freeCodeCamp |
+| Level 5 | Gold (top) | Grafana, AFFiNE |
+
+### Q5.3 Validation rubric — per-domain scoring
+
+Teams can self-assess across six validation domains. Each domain has three levels: **Basic** (1 point), **Standard** (2 points), **Advanced** (3 points).
+
+#### Domain 1: Assertions
+
+| Level | Criteria |
+|-------|---------|
+| Basic (1) | Uses web-first assertions (`toBeVisible`, `toHaveText`) |
+| Standard (2) | Guard assertions before interactions; API two-layer validation; `toPass()` for complex scenarios |
+| Advanced (3) | Custom `expect.extend()` matchers; accessibility assertions; visual regression with environment-controlled baselines |
+
+#### Domain 2: Retry and Timeout
+
+| Level | Criteria |
+|-------|---------|
+| Basic (1) | Environment-aware retries (`CI ? N : 0`) |
+| Standard (2) | Timeout hierarchy configured (test, expect, action, navigation); `maxFailures` set |
+| Advanced (3) | Five-mechanism retry hierarchy applied; `--fail-on-flaky-tests` CI gate; per-describe retry overrides |
+
+#### Domain 3: Wait Strategies
+
+| Level | Criteria |
+|-------|---------|
+| Basic (1) | Relies on auto-waiting; no `waitForTimeout` |
+| Standard (2) | Event-based waits with `Promise.all`; `waitForURL` for navigation |
+| Advanced (3) | `toPass()` with custom intervals for async data; clock API for time-dependent tests |
+
+#### Domain 4: Flakiness Management
+
+| Level | Criteria |
+|-------|---------|
+| Basic (1) | Retries enabled in CI; failures investigated |
+| Standard (2) | Three-step remediation process; quarantine with issue tracking; `--repeat-each` for diagnosis |
+| Advanced (3) | <2% flaky rate target; ESLint enforcement (11+ rules); `test.slow()` for known-slow tests; `--fail-on-flaky-tests` |
+
+#### Domain 5: Network Determinism
+
+| Level | Criteria |
+|-------|---------|
+| Basic (1) | Tests run against live backend |
+| Standard (2) | `page.route()` for critical API mocks; mock data in test files |
+| Advanced (3) | External JSON fixtures; full route interception strategy; HAR replay awareness; clock API integration |
+
+#### Domain 6: Test Isolation
+
+| Level | Criteria |
+|-------|---------|
+| Basic (1) | Default browser context isolation (Playwright default) |
+| Standard (2) | `storageState` with setup projects; database seeding; `.auth/` gitignored |
+| Advanced (3) | Three-layer isolation model; worker-indexed resources; fixture-based cleanup with auto-teardown; multi-environment via `baseURL` |
+
+### Q5.4 Scoring interpretation
+
+| Total Score (max 18) | Assessment | Action |
+|----------------------|-----------|--------|
+| 6-8 | Basic | Suitable for small projects; focus on Domains 1-2 first |
+| 9-11 | Developing | Production-ready; add ESLint, guard assertions, quarantine process |
+| 12-14 | Solid | Mature suite; add custom matchers, sharding, network interception |
+| 15-17 | Excellent | Gold-tier quality; fine-tune with dynamic sharding, flaky gates |
+| 18 | Exemplary | Industry-leading; consider publishing reusable packages |
+
+---
+
 ## Revision History
 
 | Date | Change | Basis |
 |---|---|---|
 | 2026-03-18 | Initial draft from landscape rounds 1-12 | 10 Gold, 12 Silver, 33 Bronze; ~97 total sources |
+| 2026-03-18 | Added Q5 validation quality rubric from rounds 23-32 | 21 suites validated, 6-domain rubric with 5 maturity levels |
