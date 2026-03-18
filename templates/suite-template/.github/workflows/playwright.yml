@@ -1,0 +1,100 @@
+# Playwright CI Workflow
+#
+# Standards applied:
+# - C1.1: Three-step CI workflow (install deps, install browsers, run tests)
+# - C1.2: forbidOnly + process.env.CI (set automatically by GitHub Actions)
+# - C1.3: Install only needed browsers (chromium)
+# - C2.1: workers=1 per shard with horizontal scaling via --shard
+# - C2.2: blob reporter with merge-reports for sharded execution
+# - C4.1: CI reporter stack (github + blob)
+# - C4.2: github reporter for inline PR annotations
+# - C4.3: HTML reporter as downloadable artifact
+# - C5.1: Conditional artifact capture (retain-on-failure)
+# - C5.2: Always upload artifacts with if: always()
+# - C5.3: Tiered retention policies
+# - C5.4: Shard-specific artifact naming
+# - C7.2: Path filters for selective testing
+
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths: # [C7.2] Skip E2E for non-test changes
+      - 'src/**'
+      - 'tests/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  # ----- Test Job (per shard) ----- #
+  test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # [C2.1] Ensure all shards complete
+      matrix:
+        shard: [1/4, 2/4, 3/4, 4/4]
+
+    steps:
+      # Step 1: Install dependencies [C1.1]
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+
+      # Step 2: Install Playwright browsers [C1.1, C1.3]
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Step 3: Run tests with sharding [C1.1, C2.1]
+      - name: Run Playwright tests
+        run: npx playwright test --shard=${{ matrix.shard }}
+
+      # Step 4: Upload shard blob report [C5.2, C5.4]
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ strategy.job-index }}
+          path: blob-report/
+          retention-days: 7
+
+  # ----- Merge Reports Job ----- #
+  merge-reports:
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+
+      # Download all shard blob reports [C2.2]
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      # Merge into unified HTML report [C2.2, C4.3]
+      - name: Merge reports
+        run: npx playwright merge-reports --reporter=html ./all-blob-reports
+
+      # Upload final HTML report [C5.2, C5.3]
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report
+          path: playwright-report/
+          retention-days: ${{ github.ref == 'refs/heads/main' && 30 || 7 }}
