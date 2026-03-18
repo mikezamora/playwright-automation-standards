@@ -4,7 +4,7 @@
 
 This document consolidates semantic patterns observed across Playwright suites during the landscape phase (rounds 1-11), refined with deep-dive analysis from prior phases, and expanded with terminology extraction from the semantics phase (rounds 41-44).
 
-**Status:** Updated with Rounds 41-44 terminology extraction and consistency validation. Glossary draft populated.
+**Status:** FINAL — all patterns validated across Rounds 1-46 and codified in `standards/semantic-conventions.md` (DEFINITIVE) and `glossary/playwright-glossary.md` (FINAL). No further updates expected.
 
 ---
 

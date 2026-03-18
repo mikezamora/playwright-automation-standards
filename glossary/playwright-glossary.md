@@ -2,7 +2,7 @@
 
 A reference glossary of Playwright-specific and testing terminology, built from analysis of 10 Gold-standard production suites, Playwright official documentation (v1.50), and community sources across 44 research rounds.
 
-**Status:** Initial population (Rounds 41-44). Tier 1 and Tier 2 terms defined. To be finalized in Rounds 45-46.
+**Status:** FINAL — validated in Rounds 45-46. All 42 entries verified against 10 Gold suites and Playwright v1.50 docs. No definition changes from initial population; four minor gaps addressed (setup project disambiguation, globalSetup distinction, testMatch note, flaky test clarification).
 
 ---
 
@@ -294,8 +294,9 @@ projects: [
 ]
 ```
 **Alternatives:** In general software, "project" means the repository or codebase. In Playwright, it specifically means a config entry.
+**Disambiguation — Setup Project vs Global Setup:** A "setup project" is a Playwright project with `dependencies` that runs setup files (e.g., auth) before other projects — it supports retries and parallel execution. `globalSetup` is a config-level function that runs once before all workers — it does not support Playwright's retry mechanism. Use setup projects for auth; use `globalSetup` for environment startup (e.g., starting a dev server).
 **Related terms:** Worker, Fixture, StorageState
-**Evidence:** 10/10 Gold suites define projects; range from 2 (Playwright) to 31 (Grafana).
+**Evidence:** 10/10 Gold suites define projects; range from 2 (Playwright) to 31 (Grafana). Setup project pattern: [grafana-e2e], [calcom-e2e], [immich-e2e]. GlobalSetup pattern: [nextjs-e2e].
 
 ---
 
