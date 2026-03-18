@@ -1,0 +1,25 @@
+{
+  "planPath": "docs/plans/2026-03-18-playwright-research-execution-plan.md",
+  "tasks": [
+    {"id": 0, "subject": "Task 0: Scaffold Repository Structure", "status": "pending"},
+    {"id": 1, "subject": "Task 1: Landscape Rounds 1-3 — Discover Playwright Suites", "status": "pending", "blockedBy": [0]},
+    {"id": 2, "subject": "Task 2: Landscape Rounds 4-6 — Map Ecosystem", "status": "pending", "blockedBy": [1]},
+    {"id": 3, "subject": "Task 3: Landscape Rounds 7-9 — Quality Tiers", "status": "pending", "blockedBy": [2]},
+    {"id": 4, "subject": "Task 4: Landscape Rounds 10-12 — Synthesis Checkpoint", "status": "pending", "blockedBy": [3]},
+    {"id": 5, "subject": "Task 5: Structure Rounds 13-16 — Deep Dive Suite Analyses", "status": "pending", "blockedBy": [4]},
+    {"id": 6, "subject": "Task 6: Structure Rounds 17-20 — Config, Fixtures, POM", "status": "pending", "blockedBy": [5]},
+    {"id": 7, "subject": "Task 7: Structure Rounds 21-22 — Finalize Structure Standards", "status": "pending", "blockedBy": [6]},
+    {"id": 8, "subject": "Task 8: Validation Rounds 23-26 — Assertion and Retry", "status": "pending", "blockedBy": [7]},
+    {"id": 9, "subject": "Task 9: Validation Rounds 27-30 — CI/CD and Parallelism", "status": "pending", "blockedBy": [8]},
+    {"id": 10, "subject": "Task 10: Validation Rounds 31-32 — Finalize Validation Standards", "status": "pending", "blockedBy": [9]},
+    {"id": 11, "subject": "Task 11: Performance Rounds 33-36 — Performance Testing", "status": "pending", "blockedBy": [10]},
+    {"id": 12, "subject": "Task 12: Security Rounds 37-40 — Security Testing", "status": "pending", "blockedBy": [11]},
+    {"id": 13, "subject": "Task 13: Semantics Rounds 41-44 — Term Extraction", "status": "pending", "blockedBy": [12]},
+    {"id": 14, "subject": "Task 14: Semantics Rounds 45-46 — Finalize Glossary", "status": "pending", "blockedBy": [13]},
+    {"id": 15, "subject": "Task 15: Cross-Validation Rounds 47-50 — Audit Standards", "status": "pending", "blockedBy": [14]},
+    {"id": 16, "subject": "Task 16: Cross-Validation Rounds 51-55 — Final Synthesis", "status": "pending", "blockedBy": [15]},
+    {"id": 17, "subject": "Task 17: Assemble Templates and Checklist", "status": "pending", "blockedBy": [16]},
+    {"id": 18, "subject": "Task 18: Gap Analysis, README, CLAUDE.md Update", "status": "pending", "blockedBy": [17]}
+  ],
+  "lastUpdated": "2026-03-18T00:00:00Z"
+}
