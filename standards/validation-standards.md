@@ -1,8 +1,9 @@
 # Validation Standards
 
-> **DEFINITIVE — validated across 21 suites (10 Gold, 11 Silver) in rounds 23-32**
+> **FINAL — validated across 21 suites (10 Gold, 11 Silver) in rounds 23-32, cross-validated in rounds 47-55**
 > These standards represent consensus patterns observed across production Playwright test suites.
 > Each standard is backed by 2+ suite citations, includes valid alternatives, and lists anti-patterns.
+> Cross-validation: 98% accuracy, 0 contradictions, 1 minor addition (WebSocket note).
 
 ---
 
@@ -424,6 +425,8 @@ await page.route('**/analytics/**', route => route.abort());
 
 **Valid alternative:** HAR replay via `page.routeFromHAR()` — records and replays network traffic. Simpler to set up but less stable for APIs with dynamic data.
 
+**Real-time applications:** For WebSocket-dependent features, use `page.on('websocket')` to intercept connections and `webSocket.on('framereceived')` to assert on messages. Most E2E tests can test WebSocket-driven features through UI assertions without direct WebSocket interception — the UI reflects the WebSocket state. Evidence: [rocketchat-e2e-playwright]
+
 **Anti-pattern:** Relying on live API calls for tests that need deterministic data — introduces flakiness from server state, network latency, and rate limits.
 
 - **Basis:** [playwright-network-docs], [grafana-e2e], [calcom-e2e], [testdino-network-mocking]
@@ -606,3 +609,4 @@ const test = base.extend<{ tempUser: User }>({
 |---|---|---|
 | 2026-03-18 | Initial draft from landscape rounds 1-12 | 10 Gold suites, 12 Silver, ~97 total sources |
 | 2026-03-18 | DEFINITIVE version from validation rounds 23-32 | 21 suites (10 Gold + 11 Silver), 25+ sources, 0 contradictions |
+| 2026-03-18 | **FINAL version** from cross-validation rounds 51-55 | Added WebSocket note to V5.1; 0 standards reversed |

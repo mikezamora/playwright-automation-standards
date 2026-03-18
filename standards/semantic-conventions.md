@@ -1,8 +1,9 @@
 # Semantic Conventions
 
-> **DEFINITIVE — validated across 10 Gold-standard suites in rounds 1-46**
+> **FINAL — validated across 10 Gold-standard suites in rounds 1-46, cross-validated in rounds 47-55**
 > This document contains finalized naming and semantic conventions for Playwright test automation.
 > Each standard includes a clear recommendation, 2+ suite citations, valid alternatives, and anti-patterns.
+> Cross-validation: 93% accuracy, 0 contradictions, 1 minor addition (actor naming convention note).
 
 ---
 
@@ -160,6 +161,7 @@
 **Alternatives:**
 - Non-page component objects: Drop the `Page` suffix for reusable components: `DatePicker`, `Modal`, `Sidebar` [calcom-e2e, slate-e2e]
 - Flow objects: Use a `Flow` suffix for multi-page journeys: `BookingFlow`, `OnboardingFlow` [calcom-e2e]
+- Actor objects: Use role names instead of `Page` suffix when using the actor-based POM pattern (Variant F): `ShopAdmin`, `ShopCustomer` [shopware-acceptance-test-suite]. Valid when the role is the primary organizational unit, not the page.
 
 **Anti-patterns:**
 - Lowercase or camelCase class names: `dashboardPage`, `dashboard_page`
@@ -606,3 +608,4 @@ Examples:
 |---|---|---|
 | 2026-03-18 | Initial PRELIMINARY draft from landscape rounds 1-12 | 10 Gold suites, ~97 total sources |
 | 2026-03-18 | DEFINITIVE version: expanded from 5 to 8 sections, 30 standards + 5 pitfalls | Rounds 1-46, 10 Gold suites, Playwright v1.50 docs |
+| 2026-03-18 | **FINAL version** from cross-validation rounds 47-55 | Added actor naming convention alternative to N3.1; 0 standards reversed |

@@ -1,6 +1,6 @@
 # Structure Standards
 
-> **DEFINITIVE** — validated across 10 Gold-standard suites, 5 Silver suites, 7+ community suites, and 25+ documentation sources (rounds 1-22, 122+ total sources)
+> **FINAL** — validated across 10 Gold-standard suites, 5 Silver suites, 7+ community suites, 25+ documentation sources, and 17 cross-validation suites (rounds 1-55, 122+ total sources, 0 contradictions)
 
 ---
 
@@ -61,6 +61,7 @@
 - All Playwright configuration MUST use `playwright.config.ts`
 - Never use `.js` or `.json` configuration files
 - **Evidence:** 22/22 production suites use TypeScript configuration. Only Bronze community templates use JavaScript config.
+- **Ecosystem context:** Some ecosystems (WordPress/PHP, legacy .NET) maintain JavaScript toolchains where TypeScript adoption has not yet reached test configuration. The recommendation to use TypeScript config remains — the benefits (type safety for project definitions, reporter config, and use options) apply regardless of the application's primary language.
 - **Anti-pattern:** `playwright.config.js` — loses type safety for project definitions, reporter config, and use options
 
 ### S2.2 Implement environment-aware configuration via `process.env.CI`
@@ -84,6 +85,8 @@
   - **Small teams (2-5 projects):** Inline project definitions — Cal.com, Immich
   - **Medium teams (5-15 projects):** Auth helper function pattern — `withAuth()` from Grafana
   - **Large teams (15-31 projects):** Domain-segmented projects with setup/teardown chains — Grafana (31 projects)
+- **Multi-frontend pattern (e-commerce, CMS):** Applications with distinct user-facing frontends (admin dashboard + public storefront) SHOULD define separate Playwright projects per frontend, each with its own `baseURL`, viewport, and auth state. Example: `{ name: 'admin', use: { baseURL: '/admin' } }` and `{ name: 'storefront', use: { baseURL: '/' } }`. Evidence: [shopware-acceptance-tests, saleor-dashboard, woocommerce-e2e]
+- **CMS/modular platform pattern:** Platforms with independent admin domains (Strapi, Directus) may use per-domain `playwright.config.ts` files, each spawning its own application instance. This is analogous to the monorepo pattern where each package has its own config.
 - **Common project types:** Browser targets, auth roles, application areas, test categories, setup/teardown pairs
 - **Evidence:** 12/12 deep-dived suites define multiple projects; range from 2 (Playwright) to 31 (Grafana)
 - **Valid alternative:** Single project — acceptable for focused test suites targeting one browser and one auth context
@@ -152,6 +155,7 @@
 | Framework/SDK for external consumers | **Fixture-based POM** (Variant B) | Grafana plugin-e2e |
 | Small-medium suite, simplicity prioritized | **Function helpers** (Variant D) | AFFiNE, freeCodeCamp |
 | API-heavy with minimal UI | **Data fixtures only** (Variant E) | Immich |
+| Multi-role workflows, dual-frontend apps, screenplay pattern | **Actor-based POM** (Variant F) | Shopware acceptance-test-suite |
 
 - **Evidence:** Cal.com (hybrid), Grafana plugin-e2e (fixture-based), AFFiNE (function helpers) — all Gold suites using different valid approaches
 - **Anti-pattern:** POM inheritance via `extends BasePage` — see S3.4
@@ -350,6 +354,7 @@ class MyPage {
 
 - **Evidence:** Cal.com (scenario composition), Immich (DTO factory), Clerk template (`createSignupAttributes()`)
 - **Tools:** Faker.js for randomized data, custom factories for domain-specific data
+- **CMS/configurable-schema pattern:** When the application's data model is user-configurable (CMS, form builders, low-code platforms), factories may need two levels: (1) schema/type factories that create the data structure, and (2) entry/record factories that create instances of that structure. Cleanup must respect dependency order — delete entries before deleting the types they conform to. Evidence: [strapi-e2e]
 - **Anti-pattern:** Hardcoded test data (magic strings, shared user accounts) — causes flaky tests in parallel execution
 
 ### S6.3 Ensure test data cleanup via fixture teardown
@@ -412,12 +417,29 @@ Each level is valid — maturity should match project needs, not be pursued for 
 
 ---
 
+---
+
+## Migration Awareness
+
+> Added from cross-validation rounds 50-52.
+
+Suites migrated from other frameworks carry characteristic anti-patterns. Use the standards as a migration checklist:
+
+| Source Framework | Common Debt | Standard Fix | Priority |
+|-----------------|-------------|-------------|----------|
+| **Puppeteer** | `waitForSelector`, `globalSetup`, JS config | V3.1, SEC1.1, S2.1 | High: V3.1 |
+| **Cypress** | `cy.wait()` habits, fixture confusion, single-tab mindset | V3.3, Glossary, V6.1 | High: V3.3 |
+| **Selenium** | POM inheritance (`extends BasePage`), explicit waits, CSS selectors | S3.4, V3.1, N7.3 | High: S3.4, V3.1 |
+
+---
+
 ## Revision History
 
 | Date | Change | Basis |
 |---|---|---|
 | 2026-03-18 | Initial draft from landscape rounds 1-12 | 10 Gold suites, 12 Silver, ~97 total sources |
 | 2026-03-18 | **DEFINITIVE version** from structure rounds 13-22 | 10 Gold + 5 Silver + 7 Bronze deep-dived, 122+ total sources, validation sweep of 12 additional suites |
+| 2026-03-18 | **FINAL version** from cross-validation rounds 51-55 | Added Variant F (actor POM), multi-frontend/CMS notes, ecosystem context, CMS factory pattern, migration awareness; 0 standards reversed |
 
 ### Changes from Preliminary to Definitive
 
@@ -430,3 +452,12 @@ Each level is valid — maturity should match project needs, not be pursued for 
 - **Added anti-pattern summary table** — consolidated from all rounds
 - **Added maturity spectrum** — 4-level framework for self-assessment
 - **Zero standards reversed** — all preliminary recommendations confirmed, only expanded
+
+### Changes from Definitive to Final
+
+- Added actor-based POM as Variant F to S3.1 decision framework (Shopware evidence)
+- Added multi-frontend and CMS/modular platform notes to S2.3
+- Added ecosystem context note to S2.1
+- Added CMS configurable-schema factory note to S6.2
+- Added migration awareness section
+- **Zero standards reversed** — all changes additive

@@ -1,8 +1,9 @@
 # CI/CD Standards
 
-> **DEFINITIVE — validated across 21 suites (10 Gold, 11 Silver) in rounds 23-32**
+> **FINAL — validated across 21 suites (10 Gold, 11 Silver) in rounds 23-32, cross-validated in rounds 47-55**
 > These standards represent consensus patterns observed across production Playwright test suites.
 > Each standard is backed by 2+ suite citations, includes valid alternatives, and lists anti-patterns.
+> Cross-validation: 96% accuracy, 0 contradictions, 1 minor addition (monorepo selective execution note).
 
 ---
 
@@ -562,6 +563,7 @@ on:
 **Additional techniques:**
 - `--only-changed` flag — run only tests affected by code changes
 - `paths` filter — skip e2e entirely when only docs/non-test files change
+- **Monorepo pattern:** In monorepos (Cal.com, Strapi), use dependency-graph tools (Turborepo `--filter`, nx affected) to run E2E tests only for packages affected by the change. Combine with `paths` filters: `paths: ['packages/app/**', 'packages/shared/**', 'e2e/**']`
 
 **Anti-pattern:** Running full E2E suite on every commit to every branch — wasteful for documentation or config-only changes.
 
@@ -596,7 +598,7 @@ maxFailures: process.env.CI ? 10 : 0,
 5. Browser caching — 30-60s per job
 6. Docker image — eliminates browser install entirely
 
-**Alternative to caching:** Docker image with pre-installed browsers — eliminates caching complexity entirely.
+**Note:** The caching benefit depends on CI network speed. On fast networks, cache restore time can match download time (see P6.3). Docker images are the preferred alternative as they eliminate caching complexity entirely.
 
 **Anti-pattern:** No cost controls — full suite, all browsers, no caching, no sharding, no maxFailures on every push.
 
@@ -610,3 +612,4 @@ maxFailures: process.env.CI ? 10 : 0,
 |---|---|---|
 | 2026-03-18 | Initial draft from landscape rounds 1-12 | 10 Gold suites, 12 Silver, ~97 total sources |
 | 2026-03-18 | DEFINITIVE version from validation rounds 23-32 | 21 suites (10 Gold + 11 Silver), 25+ sources, 0 contradictions |
+| 2026-03-18 | **FINAL version** from cross-validation rounds 51-55 | Added monorepo selective execution note to C7.2; clarified browser caching note in C7.3; 0 standards reversed |

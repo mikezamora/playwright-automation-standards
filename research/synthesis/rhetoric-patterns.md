@@ -4,7 +4,7 @@
 
 This document consolidates rhetoric patterns — how Playwright suites communicate their purpose, usage, and conventions — observed during the landscape phase (rounds 1-11) and refined with deep-dive analysis from the structure phase (rounds 13-16).
 
-**Status:** Updated with structure phase findings — confirmed patterns with frequencies across 10 deep-dive suites
+**Status:** FINAL — Updated with structure phase findings, confirmed in cross-validation (rounds 47-55). Patterns reflected in `standards/semantic-conventions.md` (FINAL).
 
 ---
 
