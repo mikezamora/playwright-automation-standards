@@ -1,0 +1,26 @@
+{
+  "planPath": "docs/plans/2026-03-19-phase2-execution-plan.md",
+  "tasks": [
+    {"id": 0, "subject": "Task 0: Scaffold Phase 2 files", "status": "pending"},
+    {"id": 1, "subject": "Task 1: Landscape Rounds 56-57 — Re-analyze Gold suites 1-5", "status": "pending", "blockedBy": [0]},
+    {"id": 2, "subject": "Task 2: Landscape Rounds 58-59 — Re-analyze Gold suites 6-10", "status": "pending", "blockedBy": [1]},
+    {"id": 3, "subject": "Task 3: Landscape Rounds 60-61 — Discover new large-scale suites", "status": "pending", "blockedBy": [2]},
+    {"id": 4, "subject": "Task 4: Landscape Rounds 62-63 — Discovery continued + synthesis checkpoint", "status": "pending", "blockedBy": [3]},
+    {"id": 5, "subject": "Task 5: Anatomy Deep Dives — Rounds 64-67", "status": "pending", "blockedBy": [4]},
+    {"id": 6, "subject": "Task 6: Coverage Strategy Deep Dives — Rounds 68-71", "status": "pending", "blockedBy": [4]},
+    {"id": 7, "subject": "Task 7: Scaling Organization Deep Dives — Rounds 72-75", "status": "pending", "blockedBy": [4]},
+    {"id": 8, "subject": "Task 8: Draft test-anatomy-standards.md — Rounds 76-77", "status": "pending", "blockedBy": [5]},
+    {"id": 9, "subject": "Task 9: Draft coverage-standards.md — Rounds 78-79", "status": "pending", "blockedBy": [6]},
+    {"id": 10, "subject": "Task 10: Draft scaling standards S8-S12 — Rounds 80-81", "status": "pending", "blockedBy": [7]},
+    {"id": 11, "subject": "Task 11: Validate drafts against fresh suites — Rounds 82-83", "status": "pending", "blockedBy": [8, 9, 10]},
+    {"id": 12, "subject": "Task 12: Audit new standards against existing — Rounds 84-85", "status": "pending", "blockedBy": [11]},
+    {"id": 13, "subject": "Task 13: Audit rounds 1-55 against new research — Rounds 86-87", "status": "pending", "blockedBy": [12]},
+    {"id": 14, "subject": "Task 14: Fresh suite validation — Rounds 88-89", "status": "pending", "blockedBy": [13]},
+    {"id": 15, "subject": "Task 15: Resolve contradictions, finalize standards — Rounds 90-91", "status": "pending", "blockedBy": [14]},
+    {"id": 16, "subject": "Task 16: Update templates and section guides — Rounds 92-93", "status": "pending", "blockedBy": [15]},
+    {"id": 17, "subject": "Task 17: Update checklist, quality criteria, glossary — Rounds 94-95", "status": "pending", "blockedBy": [15]},
+    {"id": 18, "subject": "Task 18: Final synthesis and consistency pass — Rounds 96-97", "status": "pending", "blockedBy": [16, 17]},
+    {"id": 19, "subject": "Task 19: Mark all Phase 2 tasks complete", "status": "pending", "blockedBy": [18]}
+  ],
+  "lastUpdated": "2026-03-19T00:00:00Z"
+}
