@@ -440,6 +440,7 @@ Suites migrated from other frameworks carry characteristic anti-patterns. Use th
 | 2026-03-18 | Initial draft from landscape rounds 1-12 | 10 Gold suites, 12 Silver, ~97 total sources |
 | 2026-03-18 | **DEFINITIVE version** from structure rounds 13-22 | 10 Gold + 5 Silver + 7 Bronze deep-dived, 122+ total sources, validation sweep of 12 additional suites |
 | 2026-03-18 | **FINAL version** from cross-validation rounds 51-55 | Added Variant F (actor POM), multi-frontend/CMS notes, ecosystem context, CMS factory pattern, migration awareness; 0 standards reversed |
+| 2026-03-19 | **S8-S12 scaling standards** from scaling rounds 72-75, drafting rounds 80-81 | 15 production suites analyzed for scaling patterns; 5 new standard areas (S8-S12) appended |
 
 ### Changes from Preliminary to Definitive
 
@@ -461,3 +462,570 @@ Suites migrated from other frameworks carry characteristic anti-patterns. Use th
 - Added CMS configurable-schema factory note to S6.2
 - Added migration awareness section
 - **Zero standards reversed** — all changes additive
+
+### Changes from Final to S8-S12 Scaling Extension
+
+- Added S8 (Scale Tiers & Transition Triggers) — 4 sub-standards
+- Added S9 (Directory & File Scaling) — 6 sub-standards
+- Added S10 (Configuration Scaling) — 5 sub-standards
+- Added S11 (Fixture & Dependency Scaling) — 5 sub-standards
+- Added S12 (Execution Strategy at Scale) — 6 sub-standards
+- Updated Anti-Pattern Summary with scaling anti-patterns
+- **Evidence basis:** 15 production suites across rounds 72-75 (Grafana, Next.js, n8n, WordPress, Rocket.Chat, freeCodeCamp, Supabase, Element Web, Excalidraw, Slate, Ghost, Immich, Cal.com, Grafana plugin-e2e, AFFiNE)
+- **Zero existing standards reversed** — all changes additive, extending S1-S7 to scaling contexts
+
+---
+
+---
+
+## S8. Scale Tiers & Transition Triggers
+
+### S8.1 Recognize four scale tiers with distinct organizational requirements
+
+- Playwright suites fall into four scale tiers, each requiring different organizational strategies
+- **Tier definitions:**
+
+| Tier | Test Count | CI Duration | Config Complexity | Key Characteristics |
+|---|---|---|---|---|
+| **Small** | 1-50 | <5 min | 30-60 LOC | Default parallelism, 2-4 browser projects, single CI job |
+| **Medium** | 50-200 | 5-20 min | 60-120 LOC | Auth setup project, CI/local differentiation, feature directories begin |
+| **Large** | 200-1000 | 20-40 min | 120-400 LOC | Multi-project config, sharding, fixture segmentation, tiered execution |
+| **Enterprise** | 1000-5000+ | 40+ min | 400+ LOC (or distributed) | CI-level orchestration, timing optimization, selective execution |
+
+- **Evidence:**
+  - Small: Excalidraw (~30 specs), Slate (~25 specs) — default parallelism, single CI job
+  - Medium: Ghost (81 specs), Immich (90+ specs), freeCodeCamp (126 specs) — auth setup, CI/local branching
+  - Large: Grafana (163+ specs, 30 projects), n8n (174 specs), Rocket.Chat (170 specs), WordPress (278 specs) — multi-project configs, sharding begins
+  - Enterprise: Next.js (550+ dirs, 84 shards) — CI orchestration, timing-based distribution
+- **Anti-pattern:** Treating all suite sizes identically — a 500-test suite run with single-shard default parallelism wastes CI resources and developer time
+
+### S8.2 Use measurable triggers to initiate tier transitions
+
+- Tier transitions SHOULD be driven by measurable thresholds, not subjective judgment
+- **Transition trigger matrix:**
+
+| Transition | Primary Trigger | Secondary Triggers | Evidence |
+|---|---|---|---|
+| Small -> Medium | CI duration approaching 5 min | 20+ test files, first auth-dependent test, first flaky test | Grafana, Ghost |
+| Medium -> Large | CI duration exceeding 15-20 min | Config exceeding 150 LOC, 3+ auth roles, 10+ specs per feature dir | Supabase, Element Web |
+| Large -> Enterprise | CI duration exceeding 40 min | Multiple teams writing tests, shard imbalance >2x, full-suite-on-PR fatigue | Next.js |
+
+- **Concrete restructuring triggers:**
+  - **File count:** Flat-to-nested directories at 20-30 test files [S9.1]
+  - **CI time:** Begin sharding when single-agent CI exceeds 5 minutes [S12.1]
+  - **Team count:** Establish test infrastructure ownership when 3+ teams write tests
+  - **Config size:** Extract helper functions or split config when exceeding 150 LOC
+- **Evidence:** Transition triggers documented across 15 suites in rounds 72-75. Suites that delay transitions accumulate organizational debt (freeCodeCamp: 126 flat files; Rocket.Chat: 170 specs with 1 worker)
+- **Anti-pattern:** Waiting until pain is acute before restructuring — restructuring under pressure leads to incomplete migration and inconsistent patterns
+
+### S8.3 Anticipate pain points at each tier boundary
+
+- Each tier transition introduces predictable pain points with known solutions
+- **Small -> Medium (crossing ~50 tests):**
+  1. **Auth management:** Tests that manually log in become slow (2-3s per test x 50 = 2+ min wasted). Fix: auth setup project with `storageState` [S4.4]
+  2. **Test data collisions:** Parallel workers create/read conflicting data. Fix: unique test data per test (timestamps, UUIDs) [S6.4]
+  3. **Reporter noise:** Default `list` reporter becomes unreadable at 50+ tests in CI. Fix: `github` reporter for CI, `html` for local [S2.6]
+  4. **Flaky test awareness:** At 2% flake rate, ~1 flaky test per run. Fix: CI retries (`retries: 2`) and flake monitoring [V4]
+- **Medium -> Large (crossing ~200 tests):**
+  1. **CI duration:** Single-job execution exceeds 15-20 min. Fix: sharding [S12.1]
+  2. **Config complexity:** Single project with flat `testDir` loses organization. Fix: multi-project config with per-project `testDir` [S10.1]
+  3. **Fixture monolith:** Single fixture file exceeds 100+ lines. Fix: fixture segmentation [S11.2]
+  4. **Page object proliferation:** POM files multiply without ownership. Fix: POM directories mirroring feature directories [S1.3]
+  5. **Flaky accumulation:** At 200+ tests, ~4+ flaky tests per run at 2% rate. Fix: flakiness reporter, quarantine process [V4]
+- **Large -> Enterprise (crossing ~500 tests):**
+  1. **Shard imbalance:** Static allocation leads to uneven durations. Fix: timing-based shard assignment [S12.5]
+  2. **Full-suite-on-PR fatigue:** Running 500+ tests on every PR is wasteful. Fix: selective execution [S12.5]
+  3. **Config monolith:** Single config exceeds 400 lines. Fix: CI-level orchestration or multi-config [S10.2]
+  4. **Infrastructure ownership:** Framework needs dedicated ownership. Fix: test infrastructure team or rotation
+  5. **Cross-team coordination:** Multiple teams writing against same infrastructure. Fix: shared utilities with API contracts [S11.4]
+- **Evidence:** Pain points documented from both positive exemplars (Grafana, n8n) and negative exemplars (Rocket.Chat serial execution, freeCodeCamp flat structure) across rounds 72-75
+
+### S8.4 Use the scaling decision tree for tier identification
+
+- Teams SHOULD use measurable indicators to determine their current tier and needed actions
+- **Decision tree:**
+
+| Question | If YES | If NO |
+|---|---|---|
+| Do you have >50 tests? | Proceed to Medium checks | Stay at Small tier |
+| Is CI duration >5 min? | Begin Medium tier transitions (auth setup, feature dirs) | Monitor, defer restructuring |
+| Do you have >200 tests? | Proceed to Large checks | Stay at Medium tier |
+| Is CI duration >20 min? | Begin Large tier transitions (sharding, multi-project, fixture split) | Monitor, defer restructuring |
+| Do you have >500 tests? | Proceed to Enterprise checks | Stay at Large tier |
+| Are multiple teams writing tests? | Begin Enterprise transitions (ownership, selective exec) | Scale within Large tier patterns |
+
+- **Evidence:** Decision tree synthesized from transition patterns observed across 15 suites (rounds 72-75)
+- **Valid alternative:** Teams may proactively adopt higher-tier patterns early if growth trajectory is clear — Cal.com used feature directories from inception regardless of test count
+
+---
+
+## S9. Directory & File Scaling
+
+### S9.1 Restructure from flat to nested directories at 20-30 test files
+
+- Suites SHOULD transition from flat to feature-nested directory organization when reaching 20-30 test files
+- **Signal:** Developers struggle to find relevant test files. Naming conventions become strained with feature prefixes (`auth-login.spec.ts`, `auth-signup.spec.ts`)
+- **Recommended transition:**
+  ```
+  BEFORE (flat, <20 files):
+    e2e/
+      auth-login.spec.ts
+      auth-signup.spec.ts
+      dashboard-create.spec.ts
+      dashboard-edit.spec.ts
+
+  AFTER (nested, 20+ files):
+    e2e/
+      auth/
+        login.spec.ts
+        signup.spec.ts
+      dashboard/
+        create.spec.ts
+        edit.spec.ts
+  ```
+- **Evidence:**
+  - Grafana moved to `-suite/` directories when test count grew beyond visual scanning
+  - Cal.com organizes by feature from the start (`auth/`, `eventType/`, `team/`)
+  - freeCodeCamp maintains flat structure at 126 files — functional but creates discovery friction
+  - Rocket.Chat has 75 spec files in a flat directory — a candidate for restructuring
+- **Cost of not transitioning:** Slower test discovery, harder code review (which tests are affected by a change?), CODEOWNERS becomes impractical
+- **Valid alternative:** Flat organization with descriptive filenames — viable for suites that will not grow beyond ~50 files (see freeCodeCamp)
+- **Anti-pattern:** Flat directory at 75+ files without clear naming conventions — creates discovery and ownership friction (Rocket.Chat, freeCodeCamp)
+
+### S9.2 Split feature directories into sub-feature directories at 10-15 spec files
+
+- Feature directories SHOULD be split into sub-feature directories when they accumulate 10-15 spec files
+- **Signal:** A single feature directory contains specs covering distinct sub-features of the same domain
+- **Recommended transition:**
+  ```
+  BEFORE (10+ specs in one feature dir):
+    e2e/dashboard/
+      create.spec.ts
+      edit.spec.ts
+      variables.spec.ts
+      permissions.spec.ts
+      sharing.spec.ts
+      templating.spec.ts
+      layout.spec.ts
+      filters.spec.ts
+      annotations.spec.ts
+      versions.spec.ts
+      export.spec.ts
+
+  AFTER (sub-feature split):
+    e2e/dashboard/
+      crud/
+        create.spec.ts
+        edit.spec.ts
+        export.spec.ts
+        versions.spec.ts
+      configuration/
+        variables.spec.ts
+        templating.spec.ts
+        annotations.spec.ts
+      access/
+        permissions.spec.ts
+        sharing.spec.ts
+      display/
+        layout.spec.ts
+        filters.spec.ts
+  ```
+- **Evidence:**
+  - Grafana `dashboards-suite/` has sub-tests for creation, editing, variables, templating, permissions
+  - n8n organizes 28 categories in deep directory nesting
+  - Rocket.Chat has 75 flat specs that would benefit from sub-feature directories
+- **Anti-pattern:** Feature directories with 15+ spec files — loses the organizational benefit of nesting
+
+### S9.3 Split spec files at 200 lines or 10 tests
+
+- Individual spec files SHOULD be split when they exceed 200 lines or contain 10+ tests
+- **Rationale:**
+  1. Sharding effectiveness: Playwright's default sharding is file-level; large files create shard imbalance
+  2. Readability: Files with 10+ tests typically cover multiple distinct user workflows that deserve separation
+  3. Code review: Smaller files produce focused diffs
+- **Recommended threshold:** Split when a file exceeds 200 lines OR 10 tests OR covers more than 2 distinct user workflows
+- **Evidence:**
+  - Grafana keeps spec files focused: typically 3-8 tests per file
+  - n8n averages 4-6 tests per file
+  - Community consensus: files with 10+ tests indicate multiple concerns bundled together
+- **Anti-pattern:** Spec files with 10-20+ tests spanning unrelated workflows — observed in freeCodeCamp and Rocket.Chat suites
+
+### S9.4 Align directory names with Playwright project names
+
+- Directory names SHOULD match Playwright project names in a 1:1 mapping
+- When `testDir` points to a directory, the project name should match the directory name
+- **Pattern:**
+  ```typescript
+  // Project name matches directory name
+  { name: 'dashboards', testDir: path.join(testDirRoot, 'dashboards-suite') }
+  { name: 'alerting', testDir: path.join(testDirRoot, 'alerting-suite') }
+  ```
+- **Evidence:** Grafana maintains a 1:1 mapping across all 30 projects. No aliasing or indirection — the project name immediately tells you where the tests live.
+- **Rationale:** Eliminates cognitive mapping between project names in config and directory names on disk. Simplifies CODEOWNERS, CI filtering, and test discovery.
+- **Anti-pattern:** Project names that diverge from directory names — forces developers to consult config to locate tests (Rocket.Chat: 1 project for 75 flat files)
+
+### S9.5 Place cross-feature tests in a dedicated shared directory
+
+- Tests that exercise workflows spanning multiple features SHOULD be placed in a dedicated directory rather than arbitrarily under one feature
+- **Recommended names:** `workflows/`, `integration/`, or `cross-feature/`
+- **Pattern:**
+  ```
+  e2e/
+    auth/           # Auth-specific tests
+    dashboard/      # Dashboard-specific tests
+    workflows/      # Tests spanning auth + dashboard + reporting
+  ```
+- **Rationale:** Cross-feature tests placed under a single feature directory create misleading ownership signals. A dedicated directory makes their cross-cutting nature explicit.
+- **Evidence:** Grafana uses CUJ (Critical User Journey) chains as dedicated projects (`dashboard-cujs-setup`, `dashboard-cujs`, `dashboard-cujs-teardown`). n8n uses a composables layer to encapsulate cross-page workflows. No suite places cross-feature tests randomly under a single feature.
+- **Valid alternative:** Place cross-feature tests under the primary feature they initiate, with a clear naming convention (e.g., `auth/full-onboarding-flow.spec.ts`) — acceptable when cross-feature tests are few (<5)
+
+### S9.6 Use per-package test directories in monorepo configurations
+
+- Monorepo projects SHOULD maintain per-package test directories with package-level Playwright configs
+- **Pattern variants:**
+
+| Variant | Structure | Evidence |
+|---|---|---|
+| **Package-scoped tests** | `packages/app-a/e2e/`, `packages/app-b/e2e/` | AFFiNE (`affine-local/`, `affine-cloud/`, `affine-desktop/`) |
+| **Centralized E2E package** | `packages/e2e-tests/` | Ghost (`ghost/core/test/e2e-browser/`) |
+| **Shared test infrastructure** | `packages/testing/playwright/` | n8n (tests + fixtures + services in one package) |
+
+- **Guidance:**
+  - Use **package-scoped** when packages are independently deployable with separate UIs
+  - Use **centralized** when E2E tests cross package boundaries and test the integrated application
+  - Use **shared infrastructure** when test utilities (fixtures, POMs, services) need to be shared across multiple test packages
+- **Evidence:** AFFiNE (3 deployment targets as packages), Ghost (centralized E2E for monorepo), n8n (testing as shared infrastructure package)
+- **Anti-pattern:** Scattering test utilities across packages without a shared infrastructure package — leads to duplicated fixtures and inconsistent patterns
+
+---
+
+## S10. Configuration Scaling
+
+### S10.1 Use config-level orchestration with helper functions for Large suites
+
+- Large suites (200-1000 tests) SHOULD use a single `playwright.config.ts` with helper functions to manage project definitions
+- **The Grafana model:** Single config file, 30 projects, managed through:
+  1. **`withAuth()` helper:** Adds `storageState` and `authenticate` dependency to any project definition
+  2. **`baseConfig` object spreading:** Prevents duplication of common settings across projects
+  3. **Root path variables:** `testDirRoot` and `pluginDirRoot` eliminate repeated path construction
+  4. **Project naming conventions:** 1:1 mapping to directory names
+- **When it works:** Monolith applications with many feature domains tested against a single deployment
+- **Evidence:** Grafana proves 30 projects in one config is maintainable when:
+  1. Helper functions eliminate per-project boilerplate
+  2. Directory conventions are strict (each project = one directory)
+  3. Project naming mirrors directory names
+  4. Dependency graphs are shallow (max depth 2-3)
+- **Config LOC guidance:** Config-level orchestration works up to ~400 LOC with good helper functions
+- **Anti-pattern:** 30 projects defined inline without helper functions — creates a 400+ LOC config file with massive duplication
+
+### S10.2 Use CI-level orchestration for Enterprise suites
+
+- Enterprise suites (1000+ tests) SHOULD move orchestration complexity from Playwright config to CI workflow definitions
+- **The Next.js model:** Simple per-directory Playwright configs with complexity in CI YAML:
+  1. CI matrix defines shard count per test group
+  2. `fetch-test-timings` job retrieves historical execution data
+  3. Custom runner distributes tests based on timing data
+  4. Multi-dimension matrix (framework x browser x Node version)
+  5. Conditional execution (documentation-only changes skip tests, PR labels gate expensive dimensions)
+- **When it works:** Monorepo frameworks with independent test directories, or any suite where static Playwright sharding produces imbalanced shard durations
+- **Evidence:** Next.js uses 84 shards across 33 workflow files with timing-based distribution. Config files remain simple; CI YAML handles orchestration.
+- **Key difference from S10.1:** Config-level orchestration keeps complexity in one file (config). CI-level orchestration distributes complexity across CI YAML but keeps each config file simple.
+- **Anti-pattern:** Attempting to manage 500+ tests through a single Playwright config without CI-level support — the config becomes unmaintainable and static sharding produces imbalanced durations
+
+### S10.3 Use dynamic project generation for infrastructure-variant testing
+
+- Suites testing the same features across different infrastructure configurations SHOULD generate projects dynamically
+- **The n8n model:** Separate `playwright-projects.ts` file generates 5-7 projects based on environment:
+  - **Local mode** (when `BACKEND_URL` is set): Single `e2e` project, excludes container-only tests
+  - **Container mode** (CI): Multiple variants per backend (sqlite, postgres, queue, multi-main) x test type (e2e, infrastructure, benchmark)
+- **When it works:** Applications that deploy across multiple backends (database engines, deployment modes, cloud vs self-hosted) and need to verify behavior across all variants
+- **Evidence:** n8n generates projects based on infrastructure topology, not features. This is the opposite of Grafana (feature-based projects). n8n tests the same features across sqlite, postgres, queue, and multi-main deployment modes.
+- **Pattern:**
+  ```typescript
+  // playwright-projects.ts (separate from main config)
+  export function generateProjects(env: string): Project[] {
+    if (env === 'local') return [{ name: 'e2e', testDir: './tests' }];
+    return backends.flatMap(backend => [
+      { name: `${backend}:e2e`, testDir: './tests', ... },
+      { name: `${backend}:infrastructure`, testDir: './tests/infra', ... },
+    ]);
+  }
+  ```
+- **Anti-pattern:** Duplicating project definitions for each infrastructure variant — dynamic generation with a single source of truth prevents configuration drift between variants
+
+### S10.4 Apply config DRY patterns to reduce project definition duplication
+
+- Multi-project configurations SHOULD use helper patterns to eliminate boilerplate
+- **Four confirmed DRY patterns (in order of adoption):**
+
+| Pattern | Mechanism | Best For | Evidence |
+|---|---|---|---|
+| **`withAuth()` helper** | Function wraps project definition with `storageState` and `dependencies` | Any multi-project config with auth | Grafana |
+| **`baseConfig` spreading** | Shared object spread into each project definition | Common settings (browser, viewport, timeouts) | Grafana |
+| **Separate projects file** | Project definitions extracted to dedicated `.ts` file | Configs exceeding 150 LOC | n8n (`playwright-projects.ts`) |
+| **Config extension** | Import and extend a base config from a package | Ecosystem platforms with shared config | WordPress (`@wordpress/scripts`) |
+
+- **Evidence:**
+  - Grafana `withAuth()`: Eliminates 3-4 lines of repeated auth config per project across 30 projects
+  - n8n `playwright-projects.ts`: Reduces main config to ~50 LOC by extracting project generation
+  - WordPress: Extends config from `@wordpress/scripts` package for consistent settings across plugin ecosystem
+- **Anti-pattern:** Repeating `storageState`, `dependencies`, and base config settings in every project definition — creates maintenance burden and increases risk of inconsistent configuration
+
+### S10.5 Split configuration when single-file config exceeds 400 LOC
+
+- Single-file Playwright configuration SHOULD be split or refactored when exceeding ~400 LOC
+- **Splitting strategies (in order of preference):**
+  1. **Extract helper functions** (first step): Move `withAuth()`, `baseConfig`, path helpers to a `playwright-helpers.ts` file
+  2. **Extract project definitions** (second step): Move project array to `playwright-projects.ts` (n8n pattern)
+  3. **Multiple config files** (last resort): One config per application area, each with its own `testDir` — used only in monorepo contexts or when CI-level orchestration (S10.2) replaces config-level orchestration
+- **Thresholds:**
+  - 150 LOC: Consider extracting helper functions
+  - 300 LOC: Extract project definitions to separate file
+  - 400+ LOC: Evaluate CI-level orchestration (S10.2) or multi-config approach
+- **Evidence:**
+  - Grafana: ~400 LOC in one file, manageable only because of helper functions
+  - Next.js: Distributed across per-directory configs + CI YAML (post-400 LOC threshold)
+  - n8n: Main config ~50 LOC + separate projects file — effective split
+- **Anti-pattern:** A single 400+ LOC config without helper functions or project extraction — becomes difficult to review, modify, and debug
+
+---
+
+## S11. Fixture & Dependency Scaling
+
+### S11.1 Scale fixture investment proportionally to suite size
+
+- Fixture depth SHOULD increase with suite scale — deeper fixture layering correlates with shorter, more maintainable tests
+- **Correlation evidence:**
+
+| Suite | Fixture Depth | Avg Test Length | Interpretation |
+|---|---|---|---|
+| n8n | 5 layers (infra -> service -> fixture -> POM -> composable) | 10-30 lines | Deep investment produces concise tests |
+| Grafana plugin-e2e | 3 layers (auth -> config -> test), 25+ fixtures | 15-40 lines | High investment, moderate test length |
+| WordPress | 4 layers (admin -> editor -> page -> request), 62 files | 15-80 lines | Published package, variable test length |
+| Ghost | 3 layers (factory -> util -> test) | 20-50 lines | Factory pattern, moderate tests |
+| Rocket.Chat | 2 layers (POM -> test) | 30-80 lines | Shallow investment, longest tests |
+
+- **Recommended fixture layers by tier:**
+  - Small (1-50 tests): 1-2 layers (utility functions + optional thin POMs)
+  - Medium (50-200 tests): 2-3 layers (fixtures + POMs + utilities)
+  - Large (200-1000 tests): 3-4 layers (fixtures + POMs + services + factories)
+  - Enterprise (1000+ tests): 4-5 layers (infrastructure + services + fixtures + POMs + composables or published package)
+- **Evidence:** 5 suites across rounds 73-75 demonstrate the inverse correlation between fixture depth and test length
+- **Anti-pattern:** Shallow fixture investment at scale (2 layers at 200+ tests) — forces test logic into test files, producing long, duplicative tests (Rocket.Chat: 30-80 line tests with repeated setup)
+
+### S11.2 Segment fixtures by environment scope and module boundary
+
+- Fixture files SHOULD be split when they exceed 100 lines or serve distinct environments
+- **Segmentation pattern:**
+  ```
+  fixtures/
+    base.ts          # Core fixtures: auth, navigation, DB, common POMs
+    admin.ts         # Admin-role specific fixtures and POMs
+    cloud.ts         # Cloud-environment specific fixtures
+    performance.ts   # Performance test specific fixtures
+  ```
+- **Segmentation triggers:**
+  - Fixture file exceeds 100 lines
+  - 3+ auth roles require distinct fixture sets
+  - 2+ environments (cloud, self-hosted) need different fixture wiring
+  - Performance tests require specialized fixtures (metrics, budgets)
+- **Evidence:**
+  - n8n splits into `base.ts` + `cloud-only.ts` when cloud-specific fixtures accumulated
+  - Grafana plugin-e2e splits fixtures by role (admin, viewer) and capability (feature flags)
+  - Supabase maintains a single fixture file at ~177 tests — approaching the split threshold
+- **Pattern:** Tests opt into the fixture tier they need via imports:
+  ```typescript
+  // Base tests import base fixtures
+  import { test } from '../fixtures/base';
+  // Cloud tests import cloud-extended fixtures
+  import { test } from '../fixtures/cloud';
+  ```
+- **Anti-pattern:** Single monolithic fixture file at 100+ LOC with unrelated concerns — admin auth, cloud config, performance metrics all in one file
+
+### S11.3 Consider a composables layer above page objects for multi-page workflows (emerging practice)
+
+- Suites with tests that orchestrate interactions across multiple pages MAY benefit from a composables abstraction layer
+- **The composables pattern:** A layer above page objects that encapsulates multi-page workflow logic. A composable like "execute workflow and verify output" might touch the canvas page, the execution panel, and the output viewer — preventing tests from containing cross-page orchestration logic.
+- **Layer position:**
+  ```
+  Infrastructure (config, global setup)
+    -> Services (API helpers, REST clients)
+      -> Fixtures (Playwright fixture injection)
+        -> Page Objects (single-page UI encapsulation)
+          -> Composables (multi-page workflow orchestration)  <-- this layer
+  ```
+- **When to consider:**
+  - Tests routinely orchestrate 3+ page objects in sequence
+  - The same multi-page workflow appears in 3+ tests
+  - Test files contain significant orchestration logic between page object calls
+- **Evidence:** n8n implements this pattern — unique among all 15 analyzed suites. The composables directory encapsulates cross-page workflows (e.g., "build workflow, execute, verify output").
+- **Caveat:** This is an **emerging practice** based on a single suite (n8n). The pattern addresses a real problem (cross-page orchestration logic in tests) but has not been validated across multiple independent suites. Teams should evaluate whether their multi-page workflow complexity justifies the additional abstraction layer.
+- **Valid alternative:** Keeping orchestration in test files using `test.step()` for readability — acceptable when cross-page workflows are few or simple
+
+### S11.4 Reserve published utility packages for ecosystem platforms only
+
+- Test utilities SHOULD be published as npm packages only when the test infrastructure serves an ecosystem of external consumers (plugins, themes, extensions)
+- **When justified:**
+  - External developers need standardized test abstractions for the platform
+  - Test utilities represent a stable API that changes infrequently
+  - The platform has a plugin/extension ecosystem that writes Playwright tests
+- **Evidence:** WordPress `@wordpress/e2e-test-utils-playwright` (62 source files) is the only suite where published utilities make sense — external WordPress plugin developers consume the package to write standardized E2E tests. The package exports pre-wired fixtures so consumers write `test('...', ({ admin, editor, requestUtils }) => { ... })` with zero boilerplate.
+- **Cost of publishing:**
+  - API stability requirements (breaking changes affect external consumers)
+  - Documentation maintenance (62 files need usage guides)
+  - Versioning discipline (tied to platform release cycle)
+  - Test coverage of the utilities themselves
+- **Anti-pattern:** Publishing a test utilities package for a single-product suite — the overhead of API stability, documentation, and versioning outweighs the benefit. Keep fixtures internal.
+- **Valid alternative for multi-team organizations:** Shared internal npm package (not published to public registry) — lower API stability burden, still provides consistent test infrastructure across teams
+
+### S11.5 Prevent circular dependencies between fixture modules
+
+- Fixture modules MUST maintain a strict dependency direction: infrastructure -> services -> fixtures -> page objects -> composables
+- **Prevention strategies:**
+  1. **One-way imports:** Each layer only imports from the layer below it. Composables import page objects; page objects import fixtures; fixtures import services.
+  2. **Barrel exports:** Each layer has an `index.ts` that defines its public API. Upstream layers import only from the barrel, never from internal files.
+  3. **Dependency linting:** Use ESLint `import/no-cycle` rule or TypeScript project references to enforce layer boundaries at build time.
+- **Evidence:** n8n's 5-layer architecture maintains strict one-way dependencies. Grafana plugin-e2e uses barrel exports across its 25+ fixture files. No analyzed suite with 3+ fixture layers exhibits circular dependencies.
+- **Anti-pattern:** Page objects importing from composables, or fixtures importing from test files — creates tight coupling and makes refactoring impossible
+
+---
+
+## S12. Execution Strategy at Scale
+
+### S12.1 Progress through five execution stages as suite scale grows
+
+- Execution strategy SHOULD evolve through five stages aligned with suite scale
+- **Stage definitions:**
+
+| Stage | Test Count | CI Duration | Strategy | Key Actions |
+|---|---|---|---|---|
+| **1. Default parallel** | 0-50 | <5 min | `fullyParallel: true`, default workers | No explicit execution strategy needed |
+| **2. Tuned parallelism** | 50-100 | 5-10 min | Explicit workers, `maxFailures`, CI retries | Set `workers: process.env.CI ? 4 : undefined`, add `retries: process.env.CI ? 2 : 0` |
+| **3. Sharding** | 100-200 | 10-20 min | `--shard=N/M` with CI matrix | Add matrix strategy, blob reporter, merge step |
+| **4. Tiered execution** | 200-500 | 20-40 min | Smoke on PR, full on merge | Dedicated smoke project/directory, CI-trigger differentiation |
+| **5. Orchestrated execution** | 500+ | 40+ min | Timing-based sharding, selective execution | `fetch-test-timings`, `--only-changed`, multi-dimension matrix |
+
+- **Evidence:**
+  - Stage 1: Excalidraw, Slate — default parallelism, single CI job
+  - Stage 2: Ghost (1 worker, conservative), Immich (default workers + 4 retries CI)
+  - Stage 3: Supabase (177 tests, 2 shards), Element Web (209 specs, CI matrix)
+  - Stage 4: Grafana (smoke project), Element Web (two-tier CI)
+  - Stage 5: Next.js (84 shards, timing-based, React version matrix)
+- **Anti-pattern:** Remaining at Stage 1 (default parallel) with 200+ tests — wastes CI time and developer productivity
+
+### S12.2 Begin sharding at 100 tests or 5 minutes CI duration
+
+- Suites SHOULD introduce sharding when test count reaches ~100 or single-agent CI duration exceeds 5 minutes
+- **Sharding formula:**
+  ```
+  shardCount = Math.ceil(testCount / 40)
+  ```
+  Target: ~40 tests per shard. Adjust based on test duration variance.
+- **Implementation checklist:**
+  1. Enable `fullyParallel: true` (essential — without it, Playwright shards at file level, causing imbalanced distribution)
+  2. Add CI matrix strategy: `matrix: { shard: [1/4, 2/4, 3/4, 4/4] }`
+  3. Use blob reporter in CI: `reporter: process.env.CI ? 'blob' : 'html'`
+  4. Add merge step after all shards complete: `npx playwright merge-reports`
+- **Evidence:**
+  - Supabase: 177 tests, 2 shards (~88 tests per shard — above 40 target, room for improvement)
+  - Element Web: 209 specs, CI matrix sharding
+  - Community consensus: Start sharding when CI exceeds 5 minutes on a single agent
+- **Anti-pattern:** Adding workers but not shards beyond 100 tests — workers help within a machine but cannot exceed core count. Sharding distributes across machines.
+
+### S12.3 Treat serial execution at 50+ tests as an anti-pattern
+
+- Suites with 50+ tests running with `workers: 1` MUST investigate and resolve the underlying isolation problem
+- **Root cause:** Serial execution (`workers: 1`) at scale is always caused by shared state between tests — database state, session state, global variables, or external service state
+- **Evidence:**
+  - Rocket.Chat: 170 specs, 1 worker, 30+ minute CI runs. Root cause: shared state between tests
+  - WordPress: 278 specs, 1 worker, excessive CI time. Root cause: shared state between tests
+  - Both suites could cut CI time by 60-75% with parallel execution
+- **Resolution path:**
+  1. Identify shared state (database, session, global variables)
+  2. Implement per-worker isolation (per-worker DB setup, per-test data creation) [S6.4]
+  3. Gradually increase worker count, monitoring for flakiness
+  4. Target `fullyParallel: true` with default workers (half CPU cores)
+- **Rationale:** The fix is test isolation, not serialization. Serialization masks the real problem and becomes increasingly expensive as tests accumulate.
+- **Anti-pattern:** Accepting `workers: 1` as a permanent configuration for suites with 50+ tests — this is a symptom, not a solution
+
+### S12.4 Implement tiered execution at 200+ tests using structural tiers
+
+- Suites with 200+ tests SHOULD implement tiered execution: fast feedback on PRs, comprehensive coverage on merge
+- **Tiered execution approaches (in order of preference):**
+
+| Approach | Mechanism | Maintenance | Evidence |
+|---|---|---|---|
+| **Project-based** | Dedicated `smoke` project in config | Low — structural, self-documenting | Grafana (smoke as project) |
+| **Directory-based** | `smoke/` directory maps to smoke project | Low — structural, discoverable | Grafana (directory maps to project) |
+| **CI-trigger-based** | Different workflows for PR vs merge events | Medium — CI YAML maintenance | Element Web |
+| **Tag-based** | `@smoke` tag + `--grep` filter | High — tags rot without discipline | Community guidance (0/15 production suites use this) |
+
+- **Recommended tier structure:**
+
+| Tier | Trigger | Duration Target | Scope |
+|---|---|---|---|
+| **Smoke** | Every PR | 2-5 min | Critical paths, login, core CRUD |
+| **Full** | Merge to main | 10-20 min | All tests, single browser |
+| **Cross-browser** | Nightly/weekly schedule | 30-60 min | All tests, all target browsers |
+
+- **Evidence:**
+  - Grafana: `smoke` as a dedicated project (structural tier, not tag-based)
+  - Element Web: Two-tier CI (fast on PR, comprehensive on merge)
+  - Production adoption gap: only 2/15 suites implement true tiered execution despite the need being clear at 200+ tests
+- **Anti-pattern:** `@smoke` tags without enforcement discipline — tags rot as tests change; the smoke suite drifts from the critical path. 0/15 analyzed production suites use tag-based smoke selection.
+
+### S12.5 Add selective test execution at 500+ tests
+
+- Enterprise suites (500+ tests) SHOULD implement selective test execution to avoid running the full suite on every PR
+- **Three implementation patterns:**
+
+| Pattern | Mechanism | Coverage | Complexity | Version Requirement |
+|---|---|---|---|---|
+| **Playwright-native** | `npx playwright test --only-changed=main` | Import-graph aware | Low | Playwright v1.46+ |
+| **Tag-grep mapping** | Detect changed modules via `git diff`, map to tags, run `--grep` | Explicit mapping | Medium | Any version |
+| **File-path filtering** | `git diff --name-only -- '*.spec.ts'` | Test files only | Low | Any version |
+
+- **Recommended two-stage CI:**
+  1. PR stage: `--only-changed` (fast, affected tests only)
+  2. Merge/nightly stage: Full suite (complete coverage)
+- **Playwright-native `--only-changed` requirements:**
+  - `fetch-depth: 0` in CI checkout for full git history
+  - Import graph analysis finds affected test files (not just changed test files)
+- **Evidence:** Next.js (selective execution at enterprise scale), Playwright v1.46+ release notes (`--only-changed` flag)
+- **Anti-pattern:** Running the full suite on every PR at 500+ tests — slow PR feedback (15+ minutes), CI resource waste, developer frustration leading to bypassing E2E checks
+
+### S12.6 Use CODEOWNERS for test directory ownership at scale
+
+- Suites with feature-based directories and multiple contributing teams SHOULD define CODEOWNERS for test directories
+- **Pattern:**
+  ```
+  # .github/CODEOWNERS
+  /e2e/auth/          @team-identity
+  /e2e/dashboard/     @team-dashboards
+  /e2e/alerting/      @team-alerting
+  /e2e/workflows/     @team-platform    # Cross-feature tests owned by platform team
+  /playwright.config.ts  @test-infra-team
+  /fixtures/          @test-infra-team
+  ```
+- **When to implement:**
+  - 3+ teams contributing tests
+  - Feature-based directory structure in place (S9.1)
+  - Test infrastructure requires dedicated ownership
+- **Rationale:** Without CODEOWNERS, test directories become "everyone's responsibility, nobody's ownership." Changes to shared fixtures or config lack review from infrastructure owners.
+- **Evidence:** Grafana's 30-project structure with 1:1 directory-project mapping enables per-directory ownership. Next.js multi-team structure requires infrastructure-level ownership for CI workflow files.
+- **Anti-pattern:** No CODEOWNERS for test directories when 3+ teams contribute — leads to inconsistent patterns, broken fixtures merged without review, and eroding test quality
+
+---
+
+## Scaling Anti-Pattern Summary
+
+| Anti-Pattern | What to Do Instead | Severity | Evidence |
+|---|---|---|---|
+| Flat directory at 75+ files | Feature-based directories [S9.1] | Medium — discovery friction | Rocket.Chat, freeCodeCamp |
+| Serial execution (`workers: 1`) at 50+ tests | Fix test isolation, enable parallelism [S12.3] | High — 60-75% CI time waste | Rocket.Chat, WordPress |
+| No sharding at 100+ tests | Shard with `ceil(N/40)` formula [S12.2] | Medium — single-machine bottleneck | Community consensus |
+| Full suite on every PR at 500+ tests | Selective execution [S12.5] | Medium — developer frustration | 9/15 suites lack this |
+| Tag-based smoke without discipline | Structural tiering (project/directory) [S12.4] | Medium — tags rot over time | 0/15 suites use tag smoke |
+| 30+ inline project definitions without helpers | Config DRY patterns [S10.4] | Medium — config duplication | Grafana (positive: uses helpers) |
+| Published test utility package for single product | Keep fixtures internal [S11.4] | Low — unnecessary overhead | WordPress (justified: ecosystem) |
+| Shallow fixtures (2 layers) at 200+ tests | Invest in 3-4+ fixture layers [S11.1] | Medium — long, duplicative tests | Rocket.Chat |
