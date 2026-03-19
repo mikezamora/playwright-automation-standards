@@ -169,3 +169,12 @@
 | cryan-negative-testing | cryan.com (blog) | N/A | https://www.cryan.com/blog/20250410.jsp | TypeScript | 2025 | Negative testing patterns: try/catch, helper functions, error message validation |
 | playwright-coverage-api-docs | playwright.dev (docs) | N/A | https://playwright.dev/docs/api/class-coverage | TypeScript | 2026-03 | Official Coverage API; startJSCoverage/stopJSCoverage; Chromium only |
 | grafana-migration-epic | grafana/grafana Issue #98825 | N/A | https://github.com/grafana/grafana/issues/98825 | N/A | 2025 | Cypress-to-Playwright migration epic; Jan-Sep 2025; 32/33 subtasks; suite-by-suite |
+| twenty-e2e | twentyhq/twenty | ~27,000 | https://github.com/twentyhq/twenty | TypeScript, React, NestJS | 2026-03 | Open-source CRM; Medium-tier suite (~80 specs); transition strain case study |
+| hoppscotch-e2e | hoppscotch/hoppscotch | ~68,000 | https://github.com/hoppscotch/hoppscotch | TypeScript, Vue.js, Nuxt | 2026-03 | API development tool; Small-tier suite (~40 specs); broad-shallow coverage |
+| outline-e2e | outline/outline | ~30,000 | https://github.com/outline/outline | TypeScript, React, Node.js | 2026-03 | Wiki/knowledge base; Small-tier suite (~25 specs); minimal fixture investment |
+| logto-e2e | logto-io/logto | ~10,000 | https://github.com/logto-io/logto | TypeScript, React, Node.js | 2026-03 | Auth platform; Medium-tier suite (~120 specs); @smoke tag exception; multi-layer E2E |
+| actual-budget-e2e | actualbudget/actual | ~18,000 | https://github.com/actualbudget/actual | TypeScript, React, Node.js | 2026-03 | Finance app; Medium-tier suite (~55 specs); transition strain case study |
+| posthog-e2e | PostHog/posthog | ~25,000 | https://github.com/PostHog/posthog | TypeScript, React, Django | 2026-03 | Product analytics; Large-tier suite (~200+ specs); "fewer longer tests" philosophy |
+| directus-e2e | directus/directus | ~30,000 | https://github.com/directus/directus | TypeScript, Vue.js, Node.js | 2026-03 | Headless CMS; Medium-tier suite (~60 specs); tests/blackbox/ directory pattern |
+| appsmith-e2e | appsmithorg/appsmith | ~35,000 | https://github.com/appsmithorg/appsmith | TypeScript, React, Java | 2026-03 | Low-code platform; Large-tier suite (~300+ specs); Cypress migration debt case study |
+| remix-e2e | remix-run/remix | ~30,000 | https://github.com/remix-run/remix | TypeScript, React, Node.js | 2026-03 | React framework; Medium-Large suite (~150 specs); highest standards compliance (95%) |
