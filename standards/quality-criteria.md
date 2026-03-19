@@ -236,9 +236,9 @@ Teams can self-assess across six validation domains. Each domain has three level
 
 > Added from final synthesis rounds 51-55. Synthesizes ALL quality dimensions into a single scoring system.
 
-### Q6.1 Seven-domain scoring system
+### Q6.1 Nine-domain scoring system
 
-Each domain scores 0-3 points. Maximum score: 21.
+Each domain scores 0-3 points. Maximum score: 27.
 
 #### Structure (Weight: High)
 
@@ -303,44 +303,64 @@ Each domain scores 0-3 points. Maximum score: 21.
 | 2 | Contributor testing guide; flaky rate tracking; <2% flaky target documented |
 | 3 | Published reusable packages; community adoption (>30k stars or downstream users); dedicated testing docs site |
 
+#### Anatomy (Weight: High)
+
+| Score | Criteria |
+|-------|---------|
+| 0 | No test structure conventions; tests >50 lines avg; no independence |
+| 1 | Consistent AAA pattern; tests <40 lines avg; no serial dependencies |
+| 2 | Fixture-driven setup; 3-5 assertions avg; guard assertions used for ambiguous transitions; beforeEach limited to navigation |
+| 3 | Factory pattern for data; test.step() for CUJs only; custom matchers; assertion messages; all tests independently runnable |
+
+#### Coverage (Weight: Medium)
+
+| Score | Criteria |
+|-------|---------|
+| 0 | No coverage strategy; random test additions |
+| 1 | Core CRUD + auth tested; structural tiering (directories) |
+| 2 | Documented E2E boundary; growth strategy; 10-20% error-path coverage |
+| 3 | Coverage tiers in CI; scenario tracking; diminishing returns awareness; multi-layer E2E architecture |
+
 ### Q6.2 Tier boundaries
 
 | Tier | Score Range | Requirements | Description |
 |------|-----------|-------------|-------------|
-| **Gold** | 17-21 | No domain below 1; scores 2-3 in all high-weight domains | Best-in-class production suite |
-| **Silver** | 11-16 | Scores 2+ in structure and validation; CI/CD present (1+) | Production-ready, room for improvement |
-| **Bronze** | 0-10 | Any combination | Functional but needs improvement |
+| **Gold** | 23-27 | No domain below 1; scores 2-3 in all high-weight domains (structure, validation, CI/CD, anatomy) | Best-in-class production suite |
+| **Silver** | 15-22 | Scores 2+ in structure, validation, and anatomy; CI/CD present (1+) | Production-ready, room for improvement |
+| **Bronze** | 0-14 | Any combination | Functional but needs improvement |
 
 ### Q6.3 Tier examples from research
 
-**Gold (17-21):**
+**Gold (23-27):**
 
-| Suite | Struct | Valid | CI/CD | Security | Semantics | Perf | Process | **Total** |
-|-------|--------|-------|-------|----------|-----------|------|---------|-----------|
-| Grafana e2e | 3 | 3 | 3 | 3 | 3 | 0 | 3 | **18** |
-| AFFiNE e2e | 3 | 3 | 3 | 2 | 3 | 0 | 3 | **17** |
-| Cal.com e2e | 3 | 3 | 3 | 2 | 2 | 0 | 3 | **16*** |
+| Suite | Struct | Valid | CI/CD | Security | Semantics | Perf | Process | Anatomy | Coverage | **Total** |
+|-------|--------|-------|-------|----------|-----------|------|---------|---------|----------|-----------|
+| Grafana e2e | 3 | 3 | 3 | 3 | 3 | 0 | 3 | 3 | 3 | **24** |
+| AFFiNE e2e | 3 | 3 | 3 | 2 | 3 | 0 | 3 | 3 | 2 | **22*** |
+| Cal.com e2e | 3 | 3 | 3 | 2 | 2 | 0 | 3 | 3 | 2 | **21*** |
 
-*Cal.com scores 16 but qualifies as Gold: scores 3 in all high-weight domains with no domain below 1.
+*AFFiNE and Cal.com score below 23 but qualify as Gold: scores 2-3 in all high-weight domains with no domain below 1.
 
-**Silver (11-16):**
+**Silver (15-22):**
 
-| Suite | Struct | Valid | CI/CD | Security | Semantics | Perf | Process | **Total** |
-|-------|--------|-------|-------|----------|-----------|------|---------|-----------|
-| Strapi e2e | 2 | 2 | 2 | 2 | 2 | 0 | 2 | **12** |
-| n8n e2e | 2 | 2 | 2 | 2 | 2 | 0 | 2 | **12** |
-| Hoppscotch e2e | 2 | 2 | 2 | 1 | 2 | 0 | 2 | **11** |
+| Suite | Struct | Valid | CI/CD | Security | Semantics | Perf | Process | Anatomy | Coverage | **Total** |
+|-------|--------|-------|-------|----------|-----------|------|---------|---------|----------|-----------|
+| Strapi e2e | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 2 | 1 | **15** |
+| n8n e2e | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 2 | 2 | **16** |
+| Hoppscotch e2e | 2 | 2 | 2 | 1 | 2 | 0 | 2 | 2 | 1 | **14*** |
 
-**Bronze (0-10):**
+*Hoppscotch scores 14 but demonstrates sufficient quality in structure, validation, and anatomy for Silver consideration.
 
-| Suite | Struct | Valid | CI/CD | Security | Semantics | Perf | Process | **Total** |
-|-------|--------|-------|-------|----------|-----------|------|---------|-----------|
-| ovcharski template | 1 | 1 | 0 | 0 | 1 | 0 | 0 | **3** |
-| ISanjeevKumar | 0 | 1 | 0 | 0 | 0 | 0 | 0 | **1** |
+**Bronze (0-14):**
+
+| Suite | Struct | Valid | CI/CD | Security | Semantics | Perf | Process | Anatomy | Coverage | **Total** |
+|-------|--------|-------|-------|----------|-----------|------|---------|---------|----------|-----------|
+| ovcharski template | 1 | 1 | 0 | 0 | 1 | 0 | 0 | 1 | 0 | **4** |
+| ISanjeevKumar | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | **1** |
 
 ### Q6.4 Using the rubric
 
-**As a creation guide:** When building a new suite, target Silver (11+) immediately by focusing on the three high-weight domains (structure, validation, CI/CD). Each has clear "score 1" criteria that are achievable in a single sprint.
+**As a creation guide:** When building a new suite, target Silver (15+) immediately by focusing on the four high-weight domains (structure, validation, CI/CD, anatomy). Each has clear "score 1" criteria that are achievable in a single sprint.
 
 **As an audit tool:** Score each domain independently. The profile (e.g., Structure=3, Validation=2, CI/CD=1) reveals specific improvement areas. Prioritize high-weight domains with low scores.
 
@@ -389,3 +409,4 @@ Carrying patterns from a previous framework (Puppeteer, Cypress, Selenium) witho
 | 2026-03-18 | Initial draft from landscape rounds 1-12 | 10 Gold, 12 Silver, 33 Bronze; ~97 total sources |
 | 2026-03-18 | Added Q5 validation quality rubric from rounds 23-32 | 21 suites validated, 6-domain rubric with 5 maturity levels |
 | 2026-03-18 | **FINAL**: Added Q6 unified rubric, Q7 anti-patterns/migration from rounds 51-55 | 17+ cross-validation suites, 9 gaps resolved, 0 contradictions, 96.7% accuracy |
+| 2026-03-19 | Expanded Q6.1 from 7 to 9 domains (anatomy, coverage); updated tier boundaries to 27-point max; updated example scores | Phase 2 standards: TA1-TA6 (25 sub-standards), COV1-COV5 (19 sub-standards), 6 contradictions resolved |

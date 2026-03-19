@@ -634,6 +634,145 @@ test.describe('Dashboard', { tag: ['@dashboards', '@smoke'] }, () => {
 
 ---
 
+## Test Anatomy & Coverage Terms
+
+### AAA Pattern (Arrange-Act-Assert)
+**Definition:** A test structure pattern where each test is divided into three phases: Arrange (set up preconditions), Act (perform the action under test), and Assert (verify the outcome). In Playwright E2E tests, AAA is a conceptual framework, not a rigid structural rule.
+**Context:** Tests under 15 lines achieve ~90% strict AAA compliance. Multi-step E2E flows commonly interleave Act-Assert pairs, where each user action is followed by verification before proceeding to the next step. Fixture-driven Arrange (where fixtures handle all setup) produces the cleanest AAA separation, with test bodies starting directly at the Act phase.
+**Example:**
+```typescript
+// Fixture-driven AAA — test body is pure Act-Assert
+test('panel updates after time range change', async ({ dashboardPage, timeRangePicker }) => {
+  // Act
+  await timeRangePicker.setRange('Last 6 hours');
+  // Assert
+  await expect(dashboardPage.panel.getByTitle('CPU')).toContainText('6h');
+});
+```
+**Related terms:** Test independence, Guard assertion, Test anatomy
+**Evidence:** 15/15 suites exhibit AAA as the dominant test structure [TA1.1]; 8/15 achieve cleanest separation through fixture-driven Arrange [TA1.3].
+
+---
+
+### Coverage Tier
+**Definition:** A classification of tests into execution groups based on purpose and time budget. The recommended four tiers are: Smoke (core health check, <5 min), Regression (feature-scoped, <30 min), Comprehensive (full suite, <2 hrs), and Specialized (nightly/scheduled).
+**Context:** Coverage tiers are implemented through directory structure and Playwright project definitions, not through priority tags. 11/15 production suites use structural tiering; 0/15 use priority tags as their primary organization. Tags drift from reality because they require per-test maintenance; directory structure is self-documenting.
+**Example:**
+```
+tests/
+  smoke/           # Tier 1: 5-10% of tests
+  dashboards/      # Tier 2: feature-scoped regression
+  bookings/        # Tier 2: feature-scoped regression
+  visual/          # Tier 4: specialized, nightly
+```
+**Related terms:** Structural tiering, Scale tier, Critical user journey
+**Evidence:** 11/15 suites use structural tiering [COV2.1]; Grafana (31 projects), Ghost (6+ configs), Cal.com (7 projects).
+
+---
+
+### Critical User Journey (CUJ)
+**Definition:** A business-critical workflow that, if broken, would directly impact revenue or core product value. CUJs are the primary unit of E2E coverage measurement, replacing code coverage percentages. Also called "Money Paths."
+**Context:** Only 2/15 suites explicitly name CUJ tests (Grafana `dashboard-cujs/`, Ghost publish flow), but 13/15 have implicit CUJs. CUJ tests are typically longer (80-170 lines), use `test.step()` for phase organization, and have higher assertion density (10-20+ assertions). CUJs should have dedicated directories and setup/teardown projects.
+**Example:**
+```typescript
+test('full booking flow', async ({ page }) => {
+  await test.step('select event type', async () => { /* ... */ });
+  await test.step('choose available slot', async () => { /* ... */ });
+  await test.step('fill attendee details', async () => { /* ... */ });
+  await test.step('confirm booking', async () => { /* ... */ });
+});
+```
+**Related terms:** Coverage tier, Smoke test, Critical path
+**Evidence:** Grafana `dashboard-cujs/` (8 specs), Cal.com booking flow, Ghost publish flow [COV3.1].
+
+---
+
+### Scale Tier
+**Definition:** A classification of test suites by size and complexity, determining which organizational and infrastructure patterns are appropriate. Four tiers are defined: Starter (<50 tests), Growing (50-200 tests), Large (200-500 tests), and Enterprise (500+ tests).
+**Context:** Each scale tier has distinct organizational requirements. Starter suites need minimal infrastructure; Enterprise suites require CI-level orchestration, selective test execution, and CODEOWNERS. Measurable triggers (test count, CI duration, team size, failure rate) indicate when to transition between tiers.
+**Related terms:** Transition trigger, Coverage tier, Execution budget
+**Evidence:** Cross-suite analysis across 15 suites with scale ranges from 35 tests (Slate) to 550+ (Next.js) [S8.1-S8.4].
+
+---
+
+### Test Independence
+**Definition:** The property that every test produces the same result whether run alone, in parallel with other tests, or in any order. Independent tests do not rely on state created by other tests and do not assume execution order.
+**Context:** 14/15 production suites achieve complete test independence. Only Rocket.Chat uses `test.describe.serial()` for inter-test state sharing. Playwright's own documentation states: "Each test should be completely isolated from another test." Test independence enables parallel execution, selective reruns, and reliable failure diagnosis.
+**Related terms:** AAA pattern, Test anatomy, Fixture
+**Evidence:** 14/15 suites achieve complete independence [TA6.1]; Playwright official docs recommend isolation as default.
+
+---
+
+### Execution Budget
+**Definition:** A time-based constraint on how long a coverage tier or CI pipeline stage is allowed to run. Execution budgets ensure test suites provide timely feedback and prevent CI cost overrun.
+**Context:** Recommended budgets by tier: Smoke <5 minutes, Regression <30 minutes, Comprehensive <2 hours. Execution budgets are enforced through `maxFailures` configuration, sharding strategy, and change detection gating. When a tier exceeds its budget, the suite should be restructured (split tests, add shards, or promote tests to a less-frequent tier).
+**Related terms:** Coverage tier, Scale tier, Shard
+**Evidence:** Grafana (8 shards, 20-min timeout), Cal.com (runs all tests within budget), Element Web (PR CI <15 min, merge queue <45 min) [COV2.3].
+
+---
+
+### Coverage Debt
+**Definition:** The accumulating gap between product features and E2E test coverage. Coverage debt grows when new features ship without corresponding tests, when production incidents reveal untested paths, or when test maintenance is deferred.
+**Context:** Coverage debt is visible through structural completeness audits — missing test directories for product features indicate debt. Unlike code coverage metrics, structural debt is immediately visible in the file tree. Grafana's `alerting-suite/` having only 1 file is an example of visible coverage debt.
+**Related terms:** Structural tiering, Coverage tier, Regression test
+**Evidence:** Grafana alerting-suite gap, cross-suite structural completeness analysis [COV5.2].
+
+---
+
+### Transition Trigger
+**Definition:** A measurable indicator that a test suite should move to the next scale tier's organizational patterns. Transition triggers prevent both premature optimization and delayed infrastructure investment.
+**Context:** Common triggers include: test count thresholds (50, 200, 500 tests), CI duration exceeding time budgets, team growth beyond 3-5 contributors, and flaky test rate exceeding 2%. When triggers are reached, the suite should adopt the next tier's directory structure, configuration patterns, fixture investment, and execution strategy.
+**Related terms:** Scale tier, Execution budget, Coverage tier
+**Evidence:** Cross-suite scaling analysis of 15 suites; tier transitions observed in Grafana (8-month migration), Cal.com (organic growth), n8n (infrastructure-first) [S8.2].
+
+---
+
+### Test Anatomy
+**Definition:** The structural conventions governing how individual tests are written, organized, and composed. Test anatomy encompasses the AAA pattern, single responsibility, step usage, setup placement, assertion patterns, and independence/determinism.
+**Context:** Test anatomy is distinct from test organization (how tests are grouped into files and directories) and test infrastructure (fixtures, CI, configuration). Good anatomy produces short, focused, independently-runnable tests with clear phase separation. The strongest predictor of good anatomy is fixture investment — suites with rich fixtures produce shorter tests with higher AAA compliance.
+**Related terms:** AAA pattern, Test independence, Single responsibility
+**Evidence:** TA1-TA6 standards derived from analysis of 15 suites across rounds 56-67.
+
+---
+
+### Guard Assertion
+**Definition:** An assertion placed before the main action in a test to verify that a precondition holds. Guard assertions catch failures at the point of the broken assumption rather than producing confusing failure messages later.
+**Context:** The research identifies a four-level spectrum for precondition verification: (1) **Auto-wait** — Playwright's built-in waiting handles simple preconditions; (2) **Locator-chain** — chaining locators implicitly guards parent element existence; (3) **Guard assertion** — explicit `await expect(locator).toBeVisible()` before interaction, used for ambiguous state transitions; (4) **Multi-guard** — multiple guard assertions in CUJ tests verifying complex preconditions. Only 2/15 suites use explicit guard assertions as a deliberate pattern (Gutenberg, Grafana); 13/15 rely entirely on auto-waiting.
+**Example:**
+```typescript
+// Level 3: Guard assertion for ambiguous state after complex navigation
+await expect(page.getByTestId('widget-panel')).toBeVisible();
+await page.getByTestId('widget-panel').getByRole('button', { name: 'Configure' }).click();
+```
+**Related terms:** Web-first assertion, AAA pattern, Auto-waiting
+**Evidence:** V1.2 guard assertion spectrum; TA5.3 (only 2/15 suites use explicit guards); Gutenberg `beforeEach` guard, Grafana CUJ step guards.
+
+---
+
+### Structural Tiering
+**Definition:** The practice of organizing tests into coverage tiers using directory structure and Playwright project definitions as the primary mechanism, rather than tags or metadata annotations.
+**Context:** Structural tiering is the universal production pattern: 11/15 suites use directory structure as their primary categorization; 0/15 use priority tags (`@smoke`, `@critical`, `@regression`). Directories are self-documenting — a `smoke-tests-suite/` directory's purpose is immediately clear, while `@smoke` tags require scanning every file.
+**Example:**
+```
+e2e-playwright/
+  smoke-tests-suite/       # Tier 1: health check
+  dashboard-cujs/          # Tier 2: critical user journeys
+  dashboards-suite/        # Tier 3: feature regression
+  panels-suite/            # Tier 3: feature regression
+```
+**Related terms:** Coverage tier, Coverage debt, Scale tier
+**Evidence:** 11/15 suites use structural tiering [COV2.1]; Grafana (31 projects), Ghost (6+ configs).
+
+---
+
+### Feature Coverage
+**Definition:** The breadth of product features that have corresponding E2E tests, measured through structural completeness (one test directory per feature area) rather than code coverage percentages. Feature coverage is the universal production heuristic for E2E test completeness.
+**Context:** Structural completeness requires zero tooling: list product features, map each to a test directory, identify gaps. Missing directories indicate untested features. PR review ensures new features include tests. 13/15 production suites rely on structural completeness as their sole coverage metric; 0/15 use formal code coverage for E2E.
+**Related terms:** Structural tiering, Coverage debt, Coverage tier
+**Evidence:** 13/15 suites rely on structural completeness [COV5.2]; Grafana directory structure maps to product features; Kent C. Dodds: "test use cases, not code."
+
+---
+
 ## Cross-Framework Reference
 
 For teams migrating from other frameworks:

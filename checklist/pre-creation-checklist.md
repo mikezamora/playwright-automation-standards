@@ -55,9 +55,9 @@
 ### Test Grouping (S5)
 
 - [ ] Are tests organized by feature or application domain? [S5.1]
-- [ ] Are tags used for cross-cutting categorization (e.g., `@smoke`, `@critical`)? [S5.2]
+- [ ] Are tags reserved for execution-context control (browser exclusion, CI tier), not priority classification? [S5.2]
 - [ ] Are related tests within files grouped using `test.describe()`? [S5.3]
-- [ ] Do complex, multi-step tests use `test.step()` for readable reporting? [S5.4]
+- [ ] Is `test.step()` reserved for CUJ tests exceeding ~50 lines, not used as a general organization tool? [S5.4]
 
 ### Data Management (S6)
 
@@ -65,6 +65,47 @@
 - [ ] Are factory functions used for test data generation with sensible defaults? [S6.2]
 - [ ] Does every test that creates data clean it up via fixture teardown? [S6.3]
 - [ ] Do parallel workers create unique, non-conflicting data (via `workerInfo.workerIndex` or timestamps)? [S6.4]
+
+### Scaling — Scale Tiers (S8)
+
+- [ ] Is the suite's current scale tier documented (Starter/Growing/Large/Enterprise)? [S8.1]
+- [ ] Are measurable transition triggers identified for the next tier? [S8.2]
+- [ ] Are pain points at the current tier boundary anticipated and mitigated? [S8.3]
+- [ ] Can the team identify their tier using the scaling decision tree? [S8.4]
+
+### Scaling — Directory & File (S9)
+
+- [ ] Has the suite restructured from flat to nested directories at 20-30 test files? [S9.1]
+- [ ] Are feature directories split into sub-feature directories at 10-15 spec files? [S9.2]
+- [ ] Are spec files split at 200 lines or 10 tests? [S9.3]
+- [ ] Do directory names align with Playwright project names? [S9.4]
+- [ ] Are cross-feature tests placed in a dedicated shared directory? [S9.5]
+- [ ] For monorepos: are per-package test directories used? [S9.6]
+
+### Scaling — Configuration (S10)
+
+- [ ] For Large suites: is config-level orchestration used with helper functions? [S10.1]
+- [ ] For Enterprise suites: is CI-level orchestration used? [S10.2]
+- [ ] Is dynamic project generation used for infrastructure-variant testing? [S10.3]
+- [ ] Are config DRY patterns applied to reduce project definition duplication? [S10.4]
+- [ ] Is configuration split when single-file config exceeds 400 LOC? [S10.5]
+
+### Scaling — Fixtures & Dependencies (S11)
+
+- [ ] Is fixture investment proportional to suite size? [S11.1]
+- [ ] Are fixtures segmented by environment scope and module boundary? [S11.2]
+- [ ] For multi-page workflows: is a composables layer considered above page objects? [S11.3]
+- [ ] Are published utility packages reserved for ecosystem platforms only? [S11.4]
+- [ ] Are circular dependencies between fixture modules prevented? [S11.5]
+
+### Scaling — Execution Strategy (S12)
+
+- [ ] Is the execution strategy aligned to the current scale tier? [S12.1]
+- [ ] Has sharding begun at 100 tests or 5 minutes CI duration? [S12.2]
+- [ ] Is serial execution at 50+ tests treated as an anti-pattern? [S12.3]
+- [ ] Is tiered execution implemented at 200+ tests using structural tiers? [S12.4]
+- [ ] Is selective test execution added at 500+ tests? [S12.5]
+- [ ] Is CODEOWNERS used for test directory ownership at scale? [S12.6]
 
 ---
 
@@ -76,7 +117,7 @@
 
 - [ ] Do all element assertions use web-first (auto-retrying) assertions? [V1.1]
 - [ ] Is there zero usage of `expect(await locator.isVisible()).toBe(true)` pattern? [V1.1]
-- [ ] Are guard assertions placed between action steps? [V1.2]
+- [ ] Is the appropriate guard assertion level used (auto-wait, locator-chain, guard, multi-guard) based on state transition ambiguity? [V1.2]
 - [ ] Are custom matchers created for repeated domain-specific assertions? [V1.3]
 - [ ] Is `expect.soft()` used only selectively (forms, tables), not as default? [V1.4]
 - [ ] Do API tests use the two-layer approach (status + body)? [V1.5]
@@ -334,6 +375,8 @@
 - [ ] Security domain score >= 1 (env var credentials, storageState, `.gitignore`)? [Q6.1]
 - [ ] Semantics domain score >= 1 (`.spec.ts`, kebab-case, action-oriented descriptions)? [Q6.1]
 - [ ] Process domain score >= 1 (active maintenance, basic README)? [Q6.1]
+- [ ] Anatomy domain score >= 2 (fixture-driven setup, 3-5 assertions avg, guard assertions for ambiguous transitions)? [Q6.1]
+- [ ] Coverage domain score >= 1 (core CRUD + auth tested, structural tiering)? [Q6.1]
 
 ### Anti-Patterns (Q7)
 
@@ -348,3 +391,91 @@
 - [ ] Is the flaky test rate target below 2%? [Q4.1]
 - [ ] Does every quarantined test have a tracking issue? [Q4.2]
 - [ ] Is there no permanent quarantine without investigation? [Q4.2]
+
+---
+
+## 8. Test Anatomy Checklist
+
+> Source: [test-anatomy-standards.md](../standards/test-anatomy-standards.md)
+
+### Arrange-Act-Assert Pattern (TA1)
+
+- [ ] Do tests follow the Arrange-Act-Assert pattern (setup, interaction, verification) as a conceptual framework? [TA1.1]
+- [ ] Do multi-step flow tests interleave Act-Assert pairs, asserting after each action? [TA1.2]
+- [ ] Is the Arrange phase handled by fixtures rather than inline setup code? [TA1.3]
+
+### Single Responsibility (TA2)
+
+- [ ] Are tests under 30 lines on average (excluding fixture setup)? [TA2.1]
+- [ ] Is fixture investment sufficient to enable short tests? [TA2.2]
+- [ ] Is there a decision framework for when to bundle vs split tests? [TA2.3]
+- [ ] Do test files contain 3-10 tests covering related behaviors of a single feature? [TA2.4]
+
+### Test Step Usage (TA3)
+
+- [ ] Is `test.step()` reserved for CUJ and long workflow tests (>50 lines), not general-purpose? [TA3.1]
+- [ ] Are separate focused tests preferred over single tests with `test.step()` divisions? [TA3.2]
+- [ ] Do `test.step()` names describe user-visible actions, not implementation details? [TA3.3]
+
+### Setup Placement (TA4)
+
+- [ ] Is setup complexity matched to product complexity using the five-tier decision framework? [TA4.1]
+- [ ] Are fixtures used (not `beforeEach`) for cross-file shared setup? [TA4.2]
+- [ ] Is `beforeAll` reserved for expensive shared read-only resources? [TA4.3]
+- [ ] Does every setup mechanism have a corresponding colocated cleanup? [TA4.4]
+
+### Assertion Patterns (TA5)
+
+- [ ] Do standard (non-CUJ) tests contain 2-8 assertions? [TA5.1]
+- [ ] Is assertion density scaled by test archetype (smoke: 1-2, CRUD: 3-5, CUJ: 10-20+)? [TA5.2]
+- [ ] Are explicit guard assertions used only for ambiguous state transitions (not every page load)? [TA5.3]
+- [ ] Do assertions follow the navigation-state-interaction-outcome ordering? [TA5.4]
+- [ ] Is `expect.soft()` used for multi-checkpoint CUJ tests, not for short tests? [TA5.5]
+- [ ] Are all element assertions web-first (auto-retrying), with zero synchronous assertion patterns? [TA5.6]
+
+### Test Independence & Determinism (TA6)
+
+- [ ] Is every test runnable in isolation and in any order? [TA6.1]
+- [ ] Is `test.describe.serial` avoided for state sharing between tests? [TA6.2]
+- [ ] Is the data isolation approach matched to the application's infrastructure? [TA6.3]
+- [ ] Are determinism patterns implemented for tests with variable inputs (seeded randoms, unique IDs)? [TA6.4]
+
+---
+
+## 9. Coverage Strategy Checklist
+
+> Source: [coverage-standards.md](../standards/coverage-standards.md)
+
+### E2E Testing Boundaries (COV1)
+
+- [ ] Is there a documented E2E testing boundary (what to test at E2E vs lower levels)? [COV1.1]
+- [ ] Does E2E coverage follow the priority table (must-have, should-have, rarely-at-E2E)? [COV1.2]
+- [ ] For complex products: is a multi-layer E2E architecture used (API layer for breadth, UI layer for depth)? [COV1.3]
+
+### Coverage Tiers (COV2)
+
+- [ ] Are coverage tiers implemented through directory structure and Playwright projects, not priority tags? [COV2.1]
+- [ ] Are tags reserved for cross-context execution control (browser exclusion, CI tier), not priority classification? [COV2.2]
+- [ ] Is CI tier complexity scaled to suite size (no tiering under 50 tests, structural tiering at 200+)? [COV2.3]
+
+### Prioritization & Growth Strategy (COV3)
+
+- [ ] Are Critical User Journeys defined as the primary unit of E2E coverage measurement? [COV3.1]
+- [ ] Does coverage growth follow the recommended priority order (auth, CRUD, navigation first)? [COV3.2]
+- [ ] Is a breadth-vs-depth strategy selected that matches the product risk profile? [COV3.3]
+- [ ] Are common growth triggers and infrastructure milestones planned for? [COV3.4]
+
+### Negative & Edge Case Testing (COV4)
+
+- [ ] Is the E2E test ratio approximately 80-90% happy-path and 10-20% error-path? [COV4.1]
+- [ ] Is E2E negative testing focused on the six categories that production suites actually test? [COV4.2]
+- [ ] Are API-level tests used for systematic error coverage rather than UI E2E? [COV4.3]
+- [ ] Is there a regression test directory or naming convention for production incidents? [COV4.4]
+
+### Coverage Measurement & Health (COV5)
+
+- [ ] Is code coverage measurement absent as a gating metric (or weekly at most, not per-PR)? [COV5.1]
+- [ ] Is structural completeness (one test directory per feature) used as the primary coverage heuristic? [COV5.2]
+- [ ] Is feature-scenario tracking used as an optional enhancement if needed? [COV5.3]
+- [ ] If collecting code coverage: is it run weekly, not per-PR? [COV5.4]
+- [ ] Is suite health assessed using the coverage maturity model? [COV5.5]
